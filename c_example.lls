@@ -1,0 +1,48 @@
+PROGRAM: C_EXAMPLE  
+
+/*
+/*
+
+INPUT
+                                        /*
+                                        /* INTERVALS ----------------------
+                                        /*
+       GR_MA                  GAPI      /* Gamma Ray - matrix
+       GR_SH                  GAPI      /* Gamma Ray - shale
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       DEPTH                  FEET      /* Downhole depth
+       GR                     GAPI      /* Gamma Ray Log
+
+LOCAL
+
+OUTPUT
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       VSH_GR                 V/V       /* Volume of Shale from GR (linear method)
+
+START:
+
+dowhile GET_FRAME ()
+
+    if ( GR == missing | gr_ma > gr_sh )  then
+
+        vsh_gr = missing
+
+    else
+
+.cc_begin
+
+        cvshgr ( gr, gr_ma, gr_sh, &vsh_gr );
+
+.cc_end
+
+    endif
+
+    call PUT_FRAME ()
+
+enddo
+
+end

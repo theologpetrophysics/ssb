@@ -1,0 +1,59 @@
+PROGRAM: C_EXAMPLE_V2  
+
+/*
+/*
+
+INPUT
+                                        /*
+                                        /* INTERVALS ----------------------
+                                        /*
+       GR_MA                  GAPI      /* Gamma Ray - matrix
+       GR_SH                  GAPI      /* Gamma Ray - shale
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       DEPTH                  FEET      /* Downhole depth
+       GR                     GAPI      /* Gamma Ray Log
+
+LOCAL
+       count                            /*
+       x                                /*
+       numpts                           /*
+       gr_arr[20000]                    /*
+       vsh_gr_arr[20000]                /*
+
+OUTPUT
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       VSH_GR                 V/V       /* Volume of Shale from GR (linear method)
+
+START:
+count = 0
+
+/* read data in to array
+dowhile GET_FRAME ()
+  count = count + 1
+  gr_arr[count] = gr
+  
+enddo
+
+numpts = count
+
+
+/* pass data to c function for processing and return values
+.cc_begin
+
+  cvshgr ( numpts, gr_arr, gr_ma, gr_sh, vsh_gr_arr );
+
+.cc_end
+
+/* transfer data from arrays to output log values
+call rewind()
+for x = 1 to numpts do
+
+  vsh_gr = vsh_gr_arr[x]
+  call put_frame()
+endfor  
+
+end
