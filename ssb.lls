@@ -1,0 +1,73 @@
+PROGRAM: SSB  
+
+/*
+/*
+
+INPUT
+                                        /*
+                                        /* CONSTANTS ----------------------
+                                        /*
+       SMTH_FACTOR                      /*
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       DEPTH                  METRES    /* Downhole depth
+       TVD                    METRES    /* Downhole depth
+       GR                     GAPI      /* Gamma Ray Log
+       VSH                    V/V       /* Volume of Shale
+
+LOCAL
+       count                            /*
+       x                                /*
+       numpts                           /*
+       depth_arr[20000]                 /*
+       tvd_arr[20000]                   /*
+       gr_arr[20000]                    /*
+       vsh_arr[20000]                   /*
+       vsh_smth_arr[20000]              /*
+
+OUTPUT
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       VSH_SMOOTH             V/V       /* Smoothed Vshale
+
+START:
+count = 0
+
+/* read data in to array
+dowhile GET_FRAME ()
+  count = count + 1
+  depth_arr[count] = depth
+  tvd_arr[count] = tvd
+  gr_arr[count] = gr
+  vsh_arr[count] = vsh  
+enddo
+
+/* get sample rate of data
+
+numpts = count
+
+
+/* pass data to c function for processing and return values
+.cc_begin
+
+  ssbFromLoglan ( numpts,
+                  smth_factor, 
+                  depth_arr,
+                  tvd_arr, 
+                  gr_arr, 
+                  vsh_arr,
+                  vsh_smth_arr );
+
+.cc_end
+
+/* transfer data from arrays to output log values
+call rewind()
+for x = 1 to numpts do
+
+  vsh_smooth = vsh_smth_arr[x]
+  call put_frame()
+endfor  
+
+end
