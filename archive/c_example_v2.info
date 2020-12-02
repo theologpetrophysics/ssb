@@ -1,0 +1,21 @@
+# spec : 
+OBJS = cvshgr_v2.c
+NAME = c_example_v2
+PREFIX = c_example_v2
+INIT = c_example_v2_init
+EXEC = c_example_v2_exe
+TERM = c_example_v2_term
+DESCRIPTION_DETAIL = "\
+\
+"
+INCLUDES = cvshgr_v2.h
+DESCRIPTION = ""
+MODE:  ARG:     VAR:     TYPE:     REPEAT: DEFAULT: VALIDATION: LOCATION: UNIT: VISIBLE: TAB_LABEL: COMMENT=
+#====  ====     ====     =====     ======= ======== =========== ========= ===== ======== ========== ========                                  
+INPUT  FILE_IN  file_in  FILE      ""      ""       ""          ""        ""    TRUE     ""         "Input table (pipe)."
+INPUT  FILE_OUT file_out FILE      ""      ""       ""          ""        ""    TRUE     ""         "Output table (pipe)."
+INPUT  GR_MA    gr_ma    NAME_REAL ""      ""       ""          INTERVAL  GAPI  TRUE     ""         "Gamma Ray - matrix"
+INPUT  GR_SH    gr_sh    NAME_REAL ""      ""       ""          INTERVAL  GAPI  TRUE     ""         "Gamma Ray - shale"
+INPUT  DEPTH    depth    NAME_REAL ""      ""       ""          LOG       FEET  TRUE     ""         "Downhole depth"
+INPUT  GR       gr       NAME_REAL ""      ""       ""          LOG       GAPI  TRUE     ""         "Gamma Ray Log"
+OUTPUT VSH_GR   vsh_gr   NAME_REAL ""      ""       ""          LOG       V/V   TRUE     ""         "Volume of Shale from GR (linear method)"
