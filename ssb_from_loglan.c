@@ -2,12 +2,24 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <math.h>   
+#include <math.h> 
+#include <stdlib.h>
+
+/*
+struct inputLogData {
+    double* depth;
+    double* tvd;
+    double* gr;
+    double* vsh;
+};
+
+*/
+
 
 
 void ssbFromLoglan(
     int numpts,
-    int smthFactor,
+    double depthAveWindow,
     double *depthLog,
     double *tvdLog,
     double *grLog, 
@@ -16,81 +28,51 @@ void ssbFromLoglan(
 
 {
     int i, k, j;
-    double smthData[1000];
-    int halfSmthWindow, framesToBeSmth;
 
-    // set this initally - this is half smoothing window
-    halfSmthWindow = smthFactor;
+    int halfSmthWindow;
+    double sampleRate;
 
-    /*
-    // find number of depths in half smthFactor
-    if (smthFactor % 2 == 0) {
-        framesToBeSmth = smthFactor / 2;
-    }
-    else {
-        framesToBeSmth = (smthFactor -1) / 2;
-    }
+   /* struct inputLogData inData;
+
+    inData.depth = depthLog;
+    inData.tvd = tvdLog;
+    inData.gr = grLog;
+    inData.vsh = vshLog;
     */
 
+    fprintf(stderr, "processing range (%f - %f m) \n", depthLog[0], depthLog[numpts-1]);
 
-    fprintf(stderr, "Number of points is : %i, The smoothfactor is : %i \n", numpts, smthFactor);
 
-    // test to display for 5 data frames
-    for (i = 0; i < 5; i++) {
-        fprintf(stderr, "depth = %f \n", depthLog[i]);
-        fprintf(stderr, "tvd = %f \n", tvdLog[i]);
-        fprintf(stderr, "gr = %f \n", grLog[i]);
-        fprintf(stderr, "vsh = %f \n", vshLog[i]);
+    // calculate number of frames based on input data 
+    sampleRate = (depthLog[numpts - 1] - depthLog[0]) / numpts;
 
-        j = 0;
-        //generate array of data to be averaged
-        for (k = fmax(i- halfSmthWindow,0); k <= (i + halfSmthWindow); k++, j++) {
-            smthData[j] = vshLog[k];
-            fprintf(stderr, "data for smoothing = %f \n", smthData[j]);
-         }
-        framesToBeSmth = j;
-        fprintf(stderr, "frames to be smoothed = %i \n", framesToBeSmth);
+    // set half smoothing window
+    halfSmthWindow = (int)fmin( (depthAveWindow / 2.0 ) / sampleRate, 499);
 
+    // inform the user ******************
+    fprintf(stderr, "Sample rate of data is %f.3 (m) \n", sampleRate);
+    fprintf(stderr, "Number of log samples to process is : %i \n The smoothfactor halfwindow is : %i \n", numpts, halfSmthWindow);
+    //***********************************
+
+    // check that Vsh is limited (0<=1)
+    for (i = 0; i < numpts; i++) {
+        vshLog[i] = fmin(vshLog[i], 1.0);
+        vshLog[i] = fmax(vshLog[i], 0.0);
     }
 
 
 
+    //call main SSB workflow
+    ssbMain(
+        numpts,
+        halfSmthWindow,
+        depthLog,
+        tvdLog,
+        grLog,
+        vshLog,
+        vshSmth);
+
+    // return to loglan
 
 
 }
-
-
-double smoothLogData(
-    int numFrames,
-    char* wtShape,
-    double* logData,
-    double sValue)
-
-{
-    int i;
-    //double *wtFactor[numFrames];
-
-    for (i = 0; i < numFrames; i++) {
-       /* if (strncmp(wtShape, "box", 3) == 0) {
-            wtFactor[i] = 1;
-        } */
-
-        fprintf(stderr, "%f \n", logData[i]);
-    }
-
-    return sValue;
-
-}
-
-/*
-int fmin(int x, int y)
-{
-    return (x < y) ? x : y;
-}
-
-int fmax(int x, int y)
-{
-    return (x > y) ? y : x;
-}
-
-*/

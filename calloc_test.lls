@@ -1,0 +1,66 @@
+PROGRAM: CALLOC_TEST  
+
+/*
+
+INPUT
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       DEPTH                            /*
+
+LOCAL
+
+OUTPUT
+
+START:
+
+.cc_begin
+    fprintf(stderr,"Memory test in main!\n");
+
+    int numFrames = 10;
+    int i;
+    double* wtFactor;
+
+    wtFactor = (double*)calloc(numFrames, sizeof(double));  // allocate numFrame doubles
+    if (wtFactor == NULL) {
+        fprintf(stderr, "calloc of size %d failed!\n", numFrames);   // could also call perror here
+    }
+    else {
+        fprintf(stderr, "\n Memory allocated  - wtFactor  \n");
+    }
+
+    for (i = 0; i < numFrames; i++) {
+        fprintf(stderr, "i = %d, ", i);
+        wtFactor[i] = 1.0;
+        fprintf(stderr, "wt factor %f \n", wtFactor[i]);
+    }
+
+    free(wtFactor);
+    
+    fprintf(stderr,"Memory test from function!\n");
+    
+    allocateMemory(&wtFactor, numFrames);
+    
+    for (i = 0; i < numFrames; i++) {
+        fprintf(stderr, "i = %d, ", i);
+        wtFactor[i] = 1.0;
+        fprintf(stderr, "wt factor %f \n", wtFactor[i]);
+    }
+    
+    free(wtFactor);
+
+.cc_end
+
+/* Load data from geolog
+dowhile GET_FRAME ()
+
+
+    /* Put your code here !!!
+
+
+    /* Store data into geolog
+    call PUT_FRAME ()
+
+enddo
+
+end

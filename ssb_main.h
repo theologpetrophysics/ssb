@@ -2,16 +2,23 @@
 extern "C" {
 #endif
 
-
-    extern void ssbFromLoglan(
+   extern void ssbMain(
         int numpts,
-        double depthAveWindow,
+        int halfSmthWindow,
         double *depthLog,
         double *tvdLog,
         double *grLog,
         double *vshLog,
         double *vshSmth
-    );
+    ); 
+
+    /*
+    extern void ssbMain(
+        int numpts,
+        int halfSmthWindow,
+        struct inputLogData inData1,
+        double* vshSmth
+    ); */
 
   
 #ifdef __cplusplus

@@ -7,7 +7,7 @@ INPUT
                                         /*
                                         /* CONSTANTS ----------------------
                                         /*
-       SMTH_FACTOR                      /*
+       DEPTH_WINDOW           M         /* depth window for averaging VSH
                                         /*
                                         /* LOGS ---------------------------
                                         /*
@@ -28,46 +28,61 @@ LOCAL
 
 OUTPUT
                                         /*
+                                        /* CONSTANTS ----------------------
+                                        /*
+       DEPTH_WINDOW           M         /* depth window for averaging VSH
+                                        /*
                                         /* LOGS ---------------------------
                                         /*
        VSH_SMOOTH             V/V       /* Smoothed Vshale
 
 START:
-count = 0
+.cc_begin
+  int cnt = 0;      
+.cc_end
 
 /* read data in to array
 dowhile GET_FRAME ()
-  count = count + 1
-  depth_arr[count] = depth
-  tvd_arr[count] = tvd
-  gr_arr[count] = gr
-  vsh_arr[count] = vsh  
+
+
+.cc_begin
+  depth_arr[cnt] = depth;
+  tvd_arr[cnt] = tvd;
+  gr_arr[cnt] = gr;
+  vsh_arr[cnt] = vsh ;
+  cnt++;
+.cc_end
+  
 enddo
 
 /* get sample rate of data
-
-numpts = count
+.cc_begin
+  numpts = cnt;
+  cnt = 0;
+.cc_end
 
 
 /* pass data to c function for processing and return values
 .cc_begin
-
   ssbFromLoglan ( numpts,
-                  smth_factor, 
+                  depth_window, 
                   depth_arr,
                   tvd_arr, 
                   gr_arr, 
                   vsh_arr,
-                  vsh_smth_arr );
-
+                  vsh_smth_arr );  
 .cc_end
 
 /* transfer data from arrays to output log values
 call rewind()
-for x = 1 to numpts do
+dowhile get_frame()
 
-  vsh_smooth = vsh_smth_arr[x]
+.cc_begin
+  vsh_smooth = vsh_smth_arr[cnt];
+  cnt++;
+.cc_end
+
   call put_frame()
-endfor  
+enddo  
 
 end

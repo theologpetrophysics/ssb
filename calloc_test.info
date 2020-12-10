@@ -1,0 +1,13 @@
+# spec : 
+INCLUDES = memory_test_loglan.h
+OBJS = memory_test_loglan.c
+NAME = calloc_test
+PREFIX = calloc_test
+INIT = calloc_test_init
+EXEC = calloc_test_exe
+TERM = calloc_test_term
+DESCRIPTION = ""
+MODE: ARG:    VAR:    TYPE:     REPEAT: DEFAULT: VALIDATION: LOCATION: UNIT: VISIBLE: TAB_LABEL: COMMENT=
+#==== ====    ====    =====     ======= ======== =========== ========= ===== ======== ========== ========              
+INPUT FILE_IN file_in FILE      ""      ""       ""          ""        ""    TRUE     ""         "Input table (pipe)."
+INPUT DEPTH   depth   NAME_REAL ""      depth    ""          LOG       ""    TRUE     ""         "Downhole depth"

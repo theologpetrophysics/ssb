@@ -1,5 +1,5 @@
 # spec : 
-OBJS = ssb_from_loglan.c
+OBJS = ssb_from_loglan.c ssb_main.c theolog_general_functions.c
 NAME = ssb
 PREFIX = ssb
 INIT = ssb_init
@@ -8,15 +8,15 @@ TERM = ssb_term
 DESCRIPTION_DETAIL = "\
 \
 "
-INCLUDES = ssb_from_loglan.h
+INCLUDES = ssb_from_loglan.h ssb_main.h theolog_general_functions.h
 DESCRIPTION = ""
-MODE:  ARG:        VAR:        TYPE:     REPEAT: DEFAULT: VALIDATION: LOCATION: UNIT:  VISIBLE: TAB_LABEL: COMMENT=
-#====  ====        ====        =====     ======= ======== =========== ========= =====  ======== ========== ========               
-INPUT  FILE_IN     file_in     FILE      ""      ""       ""          ""        ""     TRUE     ""         "Input table (pipe)."
-INPUT  FILE_OUT    file_out    FILE      ""      ""       ""          ""        ""     TRUE     ""         "Output table (pipe)."
-INPUT  SMTH_FACTOR smth_factor NAME_REAL ""      5        ""          CONSTANT  ""     TRUE     ""         ""
-INPUT  DEPTH       depth       NAME_REAL ""      depth    ""          LOG       METRES TRUE     ""         "Downhole depth"
-INPUT  TVD         tvd         NAME_REAL ""      tvd      ""          LOG       METRES TRUE     ""         "Downhole depth"
-INPUT  GR          gr          NAME_REAL ""      ""       ""          LOG       GAPI   TRUE     ""         "Gamma Ray Log"
-INPUT  VSH         vsh         NAME_REAL ""      ""       ""          LOG       V/V    TRUE     ""         "Volume of Shale"
-OUTPUT VSH_SMOOTH  vsh_smooth  NAME_REAL ""      vsh_smth ""          LOG       V/V    TRUE     ""         "Smoothed Vshale"
+MODE:  ARG:         VAR:         TYPE:     REPEAT: DEFAULT: VALIDATION: LOCATION: UNIT:  VISIBLE: TAB_LABEL: COMMENT=
+#====  ====         ====         =====     ======= ======== =========== ========= =====  ======== ========== ========                         
+INPUT  FILE_IN      file_in      FILE      ""      ""       ""          ""        ""     TRUE     ""         "Input table (pipe)."
+INPUT  FILE_OUT     file_out     FILE      ""      ""       ""          ""        ""     TRUE     ""         "Output table (pipe)."
+IN_OUT DEPTH_WINDOW depth_window NAME_REAL ""      3.0      ""          CONSTANT  M      TRUE     ""         "depth window for averaging VSH"
+INPUT  DEPTH        depth        NAME_REAL ""      depth    ""          LOG       METRES TRUE     ""         "Downhole depth"
+INPUT  TVD          tvd          NAME_REAL ""      tvd      ""          LOG       METRES TRUE     ""         "Downhole depth"
+INPUT  GR           gr           NAME_REAL ""      ""       ""          LOG       GAPI   TRUE     ""         "Gamma Ray Log"
+INPUT  VSH          vsh          NAME_REAL ""      ""       ""          LOG       V/V    TRUE     ""         "Volume of Shale"
+OUTPUT VSH_SMOOTH   vsh_smooth   NAME_REAL ""      vsh_smth ""          LOG       V/V    TRUE     ""         "Smoothed Vshale"
