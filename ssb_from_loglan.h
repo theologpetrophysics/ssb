@@ -10,7 +10,13 @@ extern "C" {
         double *tvdLog,
         double *grLog,
         double *vshLog,
-        double *vshSmth
+        double lithGroupMinThick,
+        double *vshSmth,
+        double* vshFirstDeriv,
+        double* vshSecondDeriv,
+        double* vshSmthFirstDeriv,
+        double* vshSmthSecondDeriv,
+        double *lithLogValue
     );
 
   

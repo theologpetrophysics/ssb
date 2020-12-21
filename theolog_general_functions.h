@@ -2,18 +2,24 @@
 extern "C" {
 #endif
 
-  /*  extern double smoothLogData(
+    extern double smoothLogData(
         int numFrames,
         char* wtShape,
-        double* logData); */
+        double* logData);
 
     extern double smoothLogDataSimple(
         int numFrames,
         double* logData);
 
-    extern int allocateMemory(
+    extern int allocateMemory1DD(
         double** ptr,
-        int n);
+        int n,
+        int feedback);
+
+    extern int allocateMemory1DI(
+        int** ptr,
+        int n,
+        int feedback);
 
   
 #ifdef __cplusplus

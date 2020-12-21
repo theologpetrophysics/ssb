@@ -10,7 +10,7 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++
      Funtion to calculate average log value
 +++++++++++++++++++++++++++++++++++++++++++++++*/
-/*double smoothLogData(
+double smoothLogData(
     int numFrames,
     char* wtShape,
     double* logData)
@@ -21,7 +21,7 @@
     double *wtFactor;
     double logDataSum;
 
-    int debug = 1;
+    int debug = 0;
 
     lnumFrames = numFrames;
 
@@ -34,23 +34,13 @@
         }
     }
 
-    wtFactor = (double*)calloc(lnumFrames, sizeof(double));  // allocate numFrame doubles
-    if (wtFactor == NULL) {
-        fprintf(stderr, "calloc of size %d failed!\n", lnumFrames);   // could also call perror here
-    }
-    else {
-        fprintf(stderr, "\n Memory allocated wtFactor  \n");
-    }
+    allocateMemory1DD(&wtFactor, numFrames, 0);
 
     logDataSum = 0;
 
     for (i = 0; i < numFrames; i++) {
-        fprintf(stderr,"i = %d \n", i);
        if (strncmp(wtShape, "box", 3) == 0) {
-           fprintf(stderr,"1.\n");
            wtFactor[i] = 1.0;
-           fprintf(stderr,"1.\n");
-            fprintf(stderr, "wt factor %f, ", wtFactor[i]);
         } 
 
 
@@ -66,7 +56,7 @@
 
     return sValue;
 
-}*/
+}
 
 double smoothLogDataSimple(
     int numFrames,
@@ -108,7 +98,7 @@ double smoothLogDataSimple(
 }
 
 
-int allocateMemory(double** ptr, int n)
+int allocateMemory1DD(double** ptr, int n, int feedback)
 {
     *ptr = (double*)calloc(n, sizeof(double));  // allocate numFrame doubles
     if (*ptr == NULL) {
@@ -116,8 +106,30 @@ int allocateMemory(double** ptr, int n)
         return 1;
     }
     else {
-        fprintf(stderr, "\n Memory allocated  \n");
+        if (feedback == 1) {
+            fprintf(stderr, "\n Memory allocated  \n");
+        }
         return 0;
     }
 }
+
+int allocateMemory1DI(int** ptr, int n, int feedback)
+{
+    *ptr = (int*)calloc(n, sizeof(int));  // allocate numFrame int
+    if (*ptr == NULL) {
+        fprintf(stderr, "calloc of size %d failed!\n", n);
+        return 1;
+    }
+    else {
+        if (feedback == 1) {
+            fprintf(stderr, "\n Memory allocated  \n");
+        }
+        return 0;
+    }
+}
+
+
+
+
+
 

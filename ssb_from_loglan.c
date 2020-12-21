@@ -5,8 +5,13 @@
 #include <math.h> 
 #include <stdlib.h>
 
+#include "theolog_general_functions.h"
+
+#define LGROUPSIZE 5000
+
 /*
 struct inputLogData {
+
     double* depth;
     double* tvd;
     double* gr;
@@ -24,16 +29,35 @@ void ssbFromLoglan(
     double *tvdLog,
     double *grLog, 
     double *vshLog,
-    double *vshSmth )
+    double lithGroupMinThick,
+    double *vshSmth,
+    double* vshFirstDeriv,
+    double* vshSecondDeriv,
+    double* vshSmthFirstDeriv,
+    double* vshSmthSecondDeriv,
+    double * lithLogValue)
 
 {
-    int i, k, j;
+    int i, k, j, grpcnt;
 
     int halfSmthWindow;
     double sampleRate;
+    double* lithGroupDepth;
+    double* lithGroupThick;
+    double* lithGroupVsh;
+    double* lithGroupValue;
+    int numLithGroups = 0;
+
+
+    allocateMemory1DD(&lithGroupDepth, numpts, 0);
+    allocateMemory1DD(&lithGroupThick, numpts,0);
+    allocateMemory1DD(&lithGroupVsh, numpts, 0);
+    allocateMemory1DD(&lithGroupValue, numpts, 0);
+
+    char lithGroupName[LGROUPSIZE][10] = { {0} };
+    char lithGroupLith[LGROUPSIZE][5] = { {0} };
 
    /* struct inputLogData inData;
-
     inData.depth = depthLog;
     inData.tvd = tvdLog;
     inData.gr = grLog;
@@ -70,7 +94,53 @@ void ssbFromLoglan(
         tvdLog,
         grLog,
         vshLog,
-        vshSmth);
+        vshSmth,
+        vshFirstDeriv,
+        vshSecondDeriv,
+        vshSmthFirstDeriv,
+        vshSmthSecondDeriv,
+        lithLogValue,
+        lithGroupMinThick,
+        lithGroupValue,
+        lithGroupDepth,
+        lithGroupThick,
+        lithGroupVsh,
+        &numLithGroups);
+
+    for (i = 0; i < numLithGroups-1; i++) {
+        if (lithGroupValue[i] == 1) {
+            //fprintf(stderr, "lithgroup %d - ", i);
+            strncpy(lithGroupLith[i], "sh", 2);
+        }
+        else {
+            strncpy(lithGroupLith[i], "ss", 2);
+        }       
+    }
+
+
+    grpcnt = 1;
+    for (i = numLithGroups - 2; i >= 0; i--, grpcnt++) {
+        sprintf(lithGroupName[i], "LG-%d", grpcnt);
+    }
+
+    //write out results to .csv file
+    FILE* vshlgfile;
+
+    //fprintf(stderr, "numgrps = %d \n", *numLithGroups);
+
+    vshlgfile = fopen("./data/vshlithogroup.csv", "w");
+    if (vshlgfile != NULL) {
+        fprintf(stderr, "./data/vshlithogroup.csv has been opened for write \n");
+    }
+
+    fprintf(stderr, "numgrps = %d \n", numLithGroups);
+
+    for (i = 0; i < numLithGroups; i++) {
+        fprintf(vshlgfile, "%f, %f, %s, %s, %f \n", lithGroupDepth[i], lithGroupThick[i], lithGroupLith[i], lithGroupName[i], lithGroupVsh[i]);
+    }
+
+    fclose(vshlgfile);
+
 
     // return to loglan
 

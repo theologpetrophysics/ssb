@@ -9,8 +9,17 @@ extern "C" {
         double *tvdLog,
         double *grLog,
         double *vshLog,
-        double *vshSmth
-    ); 
+        double *vshSmth,
+        double* vshFirstDeriv,
+        double* vshSecondDeriv,
+       double* vshSmthFirstDeriv,
+       double* vshSmthSecondDeriv,
+        double* lithLogValue,
+        double lithGroupMinThick,
+        double* lithGroupValue,
+        double* lithGroupDepth,
+        double* lithGroupThick,
+        int* numLithGroups); 
 
     /*
     extern void ssbMain(
