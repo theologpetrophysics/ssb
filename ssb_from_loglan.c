@@ -55,8 +55,6 @@ void ssbFromLoglan(
     allocateMemory1DD(&lithGroupVsh, numpts, 0);
     allocateMemory1DD(&lithGroupValue, numpts, 0);
 
-    char lithGroupName[LGROUPSIZE][10] = { {0} };
-    char lithGroupLith[LGROUPSIZE][5] = { {0} };
 
    /* struct inputLogData inData;
     inData.depth = depthLog;
@@ -73,9 +71,10 @@ void ssbFromLoglan(
 
     // set half smoothing window
     halfSmthWindow = (int)fmin( (depthAveWindow / 2.0 ) / sampleRate, 499);
+    halfSmthWindow = fmax((double)halfSmthWindow, 1.0);
 
     // inform the user ******************
-    fprintf(stderr, "Sample rate of data is %f.3 (m) \n", sampleRate);
+    fprintf(stderr, "Sample rate of data is %f (m) \n", sampleRate);
     fprintf(stderr, "Number of log samples to process is : %i \n The smoothfactor halfwindow is : %i \n", numpts, halfSmthWindow);
     //***********************************
 
@@ -109,7 +108,7 @@ void ssbFromLoglan(
         lithGroupVsh,
         &numLithGroups);
 
-    for (i = 0; i < numLithGroups-1; i++) {
+/*    for (i = 0; i < numLithGroups-1; i++) {
         if (lithGroupValue[i] == 1) {
             //fprintf(stderr, "lithgroup %d - ", i);
             strncpy(lithGroupLith[i], "sh", 2);
@@ -125,6 +124,8 @@ void ssbFromLoglan(
         sprintf(lithGroupName[i], "ES-%d", grpcnt);
     }
 
+    
+
     //write out results to .csv file
     FILE* vshlgfile;
 
@@ -137,14 +138,25 @@ void ssbFromLoglan(
 
     fprintf(stderr, "numgrps = %d \n", numLithGroups);
 
+    grpcnt = 1;
+    for (i = numLithGroups - 2; i >= 0; i--) {
+        fprintf(stderr, "name = %s \n", lithNameptr[i]);
+    }
+
     for (i = 0; i < numLithGroups; i++) {
-        fprintf(vshlgfile, "%f, %f, %s, %s, %f \n", lithGroupDepth[i], lithGroupThick[i], lithGroupLith[i], lithGroupName[i], lithGroupVsh[i]);
+        fprintf(vshlgfile, "%f, %f, %s, %s, %f \n", lithGroupDepth[i], lithGroupThick[i], &lithGroupLith[i], &lithGroupName[i], lithGroupVsh[i]);
     }
 
     fclose(vshlgfile);
 
 
-    // return to loglan
 
+    // free memory
+    for (i = 0; i < LGROUPSIZE; i++) {
+        free(lithNameptr[i]);
+    }
+    free(lithNameptr);
+
+    */
 
 }
