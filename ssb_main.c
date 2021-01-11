@@ -16,6 +16,7 @@ void ssbMain(
     double* tvd,
     double* gr,
     double* vsh,
+    char* lithgoupMethod,
     double* vshSmth,
     double* vshFirstDeriv,
     double* vshSecondDeriv,
@@ -27,7 +28,7 @@ void ssbMain(
     double* lithGroupDepth,
     double* lithGroupThick,
     double* lithGroupVsh,
-    int *numLithGroups)
+    int* numLithGroups)
 
 {
     int i, k, j, lithframecnt;
@@ -73,13 +74,13 @@ void ssbMain(
         }
     }
 
-    // caluclate second derivative of Vsh and smoothed Vsh
-    for (i = 0; i < numpts-1; i++) {
+    // caluclate first and second derivative of Vsh and smoothed Vsh
+    for (i = 0; i < numpts - 1; i++) {
         vshFirstDeriv[i] = (vsh[i + 1] - vsh[i]) / (depth[i + 1] - depth[i]);
         vshSmthFirstDeriv[i] = (vshSmth[i + 1] - vshSmth[i]) / (depth[i + 1] - depth[i]);
     }
 
-    for (i = 0; i < numpts-1; i++) {
+    for (i = 0; i < numpts - 1; i++) {
         vshSecondDeriv[i] = (vshFirstDeriv[i + 1] - vshFirstDeriv[i]) / (depth[i + 1] - depth[i]);
         vshSmthSecondDeriv[i] = (vshSmthFirstDeriv[i + 1] - vshSmthFirstDeriv[i]) / (depth[i + 1] - depth[i]);
     }
@@ -88,13 +89,27 @@ void ssbMain(
     // logic to calculate vsh lithology groups
     // First pick sand/shale depths
     for (i = 0; i < numpts; i++) {
-        if (vsh[i] >= vshSmth[i]) {
-            //shale lithogroup
+
+        if (vsh[i] == vshSmth[i] == 1.0) {
             lithValue[i] = 1;
         }
+        else if (strncmp(lithgoupMethod, "AVERAGE", 7) == 0) {
+            if (vsh[i] >= vshSmth[i]) {
+                //shale lithogroup
+                lithValue[i] = 1;
+            }
+            else {
+                // sand lithogroup
+                lithValue[i] = 0;
+            }
+        }
         else {
-            // sand lithogroup
-            lithValue[i] = 0;
+            if (vshSecondDeriv[i] >= 0) {
+                lithValue[i] = 0;
+            }
+            else {
+                lithValue[i] = 1;
+            }
         }
     }
 
@@ -124,13 +139,15 @@ void ssbMain(
             lithValue[i-1] == lithValue[i-2] &
             (depth[i] - lithGroupDepth[j]) >= lithGroupMinThick ) {
 
-            // lithgroup bed statistics
+            // lithgroup bed statistics of previous bed
             lithGroupThick[j] = depth[i] - lithGroupDepth[j];
             liththicksum += lithGroupThick[j];
             if (lithGroupThick[j] > liththickmax) liththickmax = lithGroupThick[j];
             if (lithGroupThick[j] < liththickmin) liththickmin = lithGroupThick[j];
 
             lithGroupVsh[j] = lithvshsum / lithframecnt;
+
+            // no increment and define current bed lith
             j++;
             lithGroupValue[j] = lithValue[i];
             lithGroupDepth[j] = depth[i];

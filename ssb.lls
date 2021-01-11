@@ -7,7 +7,8 @@ INPUT
                                         /*
                                         /* CONSTANTS ----------------------
                                         /*
-       DEPTH_WINDOW           M         /* depth window for averaging VSH
+       LITHGROUP_METHOD       ALPHA*8   /*
+       DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
                                         /* LOGS ---------------------------
@@ -36,7 +37,8 @@ OUTPUT
                                         /*
                                         /* CONSTANTS ----------------------
                                         /*
-       DEPTH_WINDOW           M         /* depth window for averaging VSH
+       LITHGROUP_METHOD       ALPHA*8   /*
+       DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
                                         /* LOGS ---------------------------
@@ -82,6 +84,7 @@ enddo
                   tvd_arr, 
                   gr_arr, 
                   vsh_arr,
+                  lithgroup_method,
                   tvd_vshlith_min,
                   vsh_smth_arr,
                   vsh_first_deriv_arr,

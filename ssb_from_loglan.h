@@ -10,6 +10,7 @@ extern "C" {
         double *tvdLog,
         double *grLog,
         double *vshLog,
+        char* lithgroupMethod,
         double lithGroupMinThick,
         double *vshSmth,
         double* vshFirstDeriv,

@@ -29,6 +29,7 @@ void ssbFromLoglan(
     double *tvdLog,
     double *grLog, 
     double *vshLog,
+    char* lithgroupMethod,
     double lithGroupMinThick,
     double *vshSmth,
     double* vshFirstDeriv,
@@ -94,6 +95,7 @@ void ssbFromLoglan(
         tvdLog,
         grLog,
         vshLog,
+        lithgroupMethod,
         vshSmth,
         vshFirstDeriv,
         vshSecondDeriv,
@@ -120,7 +122,7 @@ void ssbFromLoglan(
 
     grpcnt = 1;
     for (i = numLithGroups - 2; i >= 0; i--, grpcnt++) {
-        sprintf(lithGroupName[i], "LG-%d", grpcnt);
+        sprintf(lithGroupName[i], "ES-%d", grpcnt);
     }
 
     //write out results to .csv file
