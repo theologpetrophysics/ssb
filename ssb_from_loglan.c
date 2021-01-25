@@ -43,18 +43,19 @@ void ssbFromLoglan(
 
     int halfSmthWindow;
     double sampleRate;
+
+    int numLithGroups = 0;
+
+/*
     double* lithGroupDepth;
     double* lithGroupThick;
     double* lithGroupVsh;
     double* lithGroupValue;
-    int numLithGroups = 0;
-
-
     allocateMemory1DD(&lithGroupDepth, numpts, 0);
     allocateMemory1DD(&lithGroupThick, numpts,0);
     allocateMemory1DD(&lithGroupVsh, numpts, 0);
     allocateMemory1DD(&lithGroupValue, numpts, 0);
-
+*/
 
    /* struct inputLogData inData;
     inData.depth = depthLog;
@@ -71,11 +72,10 @@ void ssbFromLoglan(
 
     // set half smoothing window
     halfSmthWindow = (int)fmin( (depthAveWindow / 2.0 ) / sampleRate, 499);
-    halfSmthWindow = fmax((double)halfSmthWindow, 1.0);
+    //halfSmthWindow = fmax((double)halfSmthWindow, 1.0);
 
     // inform the user ******************
     fprintf(stderr, "Sample rate of data is %f (m) \n", sampleRate);
-    fprintf(stderr, "Number of log samples to process is : %i \n The smoothfactor halfwindow is : %i \n", numpts, halfSmthWindow);
     //***********************************
 
     // check that Vsh is limited (0<=1)
@@ -102,10 +102,6 @@ void ssbFromLoglan(
         vshSmthSecondDeriv,
         lithLogValue,
         lithGroupMinThick,
-        lithGroupValue,
-        lithGroupDepth,
-        lithGroupThick,
-        lithGroupVsh,
         &numLithGroups);
 
 /*    for (i = 0; i < numLithGroups-1; i++) {

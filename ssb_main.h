@@ -16,11 +16,7 @@ extern "C" {
        double* vshSmthFirstDeriv,
        double* vshSmthSecondDeriv,
         double* lithLogValue,
-        double lithGroupMinThick,
-        double* lithGroupValue,
-        double* lithGroupDepth,
-        double* lithGroupThick,
-        int* numLithGroups); 
+        double lithGroupMinThick); 
 
     /*
     extern void ssbMain(
