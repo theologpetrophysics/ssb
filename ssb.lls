@@ -8,6 +8,8 @@ INPUT
                                         /* CONSTANTS ----------------------
                                         /*
        LITHGROUP_METHOD       ALPHA*8   /*
+       ECS_METHOD             ALPHA*8   /*
+       OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
@@ -27,27 +29,27 @@ LOCAL
        gr_arr[20000]                    /*
        vsh_arr[20000]                   /*
        vsh_smth_arr[20000]              /*
+       gr_smth_arr[20000]               /*
        vsh_lith_group_arr[20000]           /*
-       vsh_first_deriv_arr[20000]           /*
-       vshsmth_first_deriv_arr[20000]           /*
-       vsh_second_deriv_arr[20000]           /*
-       vshsmth_second_deriv_arr[20000]           /*
+       first_deriv_arr[20000]           /*
+       second_deriv_arr[20000]           /*
 
 OUTPUT
                                         /*
                                         /* CONSTANTS ----------------------
                                         /*
        LITHGROUP_METHOD       ALPHA*8   /*
+       ECS_METHOD             ALPHA*8   /*
+       OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
                                         /* LOGS ---------------------------
                                         /*
        VSH_SMOOTH             V/V       /* Smoothed Vshale
-       VSH_DERIV1             V/V       /* VSH first derivative
-       VSH_SMTH_DERIV1        V/V       /* Smoothed VSH first derivative
-       VSH_DERIV2             V/V       /* VSH second derivative
-       VSH_SMTH_DERIV2        V/V       /* Smoothed VSH second derivative
+       GR_SMOOTH              GAPI      /* Smoothed GR
+       DERIV1                 V/V       /* VSH first derivative
+       DERIV2                 V/V       /* VSH second derivative
        LITH_VALUE             INTEGER   /* 1 = shale, 0 = sand
 
 START:
@@ -85,12 +87,13 @@ enddo
                   gr_arr, 
                   vsh_arr,
                   lithgroup_method,
+                  ecs_method,
+                  opt_element_log,
                   tvd_vshlith_min,
                   vsh_smth_arr,
-                  vsh_first_deriv_arr,
-                  vsh_second_deriv_arr,
-                  vshsmth_first_deriv_arr,
-                  vshsmth_second_deriv_arr,
+                  gr_smth_arr,
+                  first_deriv_arr,
+                  second_deriv_arr,
                   vsh_lith_group_arr);  
 .cc_end
 
@@ -100,10 +103,9 @@ dowhile get_frame()
 
 .cc_begin
   vsh_smooth = vsh_smth_arr[cnt];
-  vsh_deriv1 = vsh_first_deriv_arr[cnt];
-  vsh_deriv2 = vsh_second_deriv_arr[cnt];
-  vsh_smth_deriv1 = vshsmth_first_deriv_arr[cnt];
-  vsh_smth_deriv2 = vshsmth_second_deriv_arr[cnt];
+  gr_smooth = gr_smth_arr[cnt];
+  deriv1 = first_deriv_arr[cnt];
+  deriv2 = second_deriv_arr[cnt];
   lith_value = vsh_lith_group_arr[cnt];
   cnt++;
 .cc_end

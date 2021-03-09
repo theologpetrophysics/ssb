@@ -55,7 +55,7 @@ void calcBedVsh(
         }
         bedVsh[j] = vshsum / (double)vshcnt;
 
-        bedTSF[j] = bedThick[j] / (1.0 - bedVsh[j]);
+        bedTSF[j] = bedThick[j] / (1.0 - fmin(bedVsh[j],0.95));
     }
 
     // caluclate Vsh
@@ -72,11 +72,12 @@ void ssbMain(
     double* gr,
     double* vsh,
     char* lithGroupMethod,
+    char* ecsMethod,
+    char* optElementLog,
     double* vshSmth,
-    double* vshFirstDeriv,
-    double* vshSecondDeriv,
-    double* vshSmthFirstDeriv,
-    double* vshSmthSecondDeriv,
+    double* grSmth,
+    double* firstDeriv,
+    double* secondDeriv,
     double* lithValue,
     double lithGroupMinThick)
 
@@ -84,6 +85,7 @@ void ssbMain(
     int i, k, j, grpcnt;
 
     double smthData[1000] = { 0 }, localsValue;
+    double grsmthData[1000] = { 0 };
     int framesToBeSmth;
 
 
@@ -104,6 +106,7 @@ void ssbMain(
 
         if (halfSmthWindow == 0) {
             vshSmth[i] = vsh[i];
+            grSmth[i] = gr[i];
 
         }
         else {
@@ -111,6 +114,7 @@ void ssbMain(
             //generate array of data to be averaged
             for (k = fmax(i - halfSmthWindow, 0); k <= fmin((i + halfSmthWindow), numpts - 1); k++, j++) {
                 smthData[j] = vsh[k];
+                grsmthData[j] = gr[k];
                 if (debug == 1) {
                     fprintf(stderr, "%f, ", smthData[j]);
                 }
@@ -124,21 +128,37 @@ void ssbMain(
 
             localsValue = smoothLogData(framesToBeSmth, "box", smthData);
             vshSmth[i] = localsValue;
+            localsValue = smoothLogData(framesToBeSmth, "box", grsmthData);
+            grSmth[i] = localsValue;
             if (debug == 1) {
                 fprintf(stderr, "Smoothed value = %f \n ", localsValue);
             }
         }
     }
 
-    // caluclate first and second derivative of Vsh and smoothed Vsh
-    for (i = 1; i < numpts; i++) {
-        vshFirstDeriv[i] = (vsh[i] - vsh[i - 1]) / (depth[i] - depth[i - 1]);
-        vshSmthFirstDeriv[i] = (vshSmth[i] - vshSmth[i - 1]) / (depth[i] - depth[i - 1]);
+
+    // use GR or VSH for the derivative method
+    double* derivInLog;
+    allocateMemory1DD(&derivInLog, numpts, 0);
+
+    if (strncmp(optElementLog, "GR", 2) == 0) {
+        for (i = 0; i < numpts; i++) {
+            derivInLog[i] = grSmth[i];
+        }
+    }
+    else if (strncmp(optElementLog, "VSH", 3) == 0) {
+        for (i = 0; i < numpts; i++) {
+            derivInLog[i] = vshSmth[i];
+        }
+    }
+
+    // calculate first and second derivative of input log
+    for (i = 0; i < numpts; i++) {
+        firstDeriv[i] = (derivInLog[i+1] - derivInLog[i]) / (depth[i+1] - depth[i]);
     }
 
     for (i = 1; i < numpts; i++) {
-        vshSecondDeriv[i] = (vshFirstDeriv[i] - vshFirstDeriv[i -1 ]) / (depth[i] - depth[i - 1]);
-        vshSmthSecondDeriv[i] = (vshSmthFirstDeriv[i] - vshSmthFirstDeriv[i - 1]) / (depth[i] - depth[i - 1]);
+        secondDeriv[i] = (firstDeriv[i + 1] - firstDeriv[i]) / (depth[i + 1] - depth[i]);
     }
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -166,10 +186,10 @@ void ssbMain(
     // First pick sand/shale depths
     for (i = 0; i < numpts; i++) {
 
-        if (vshSmth[i] == 1.0) {
+        if (vshSmth[i] == 1.0 & strncmp(optElementLog, "VSH", 3) == 0) {
             lithValue[i] = 1;
         }
-        else if (vshSmth[i] == 0) {
+        else if (vshSmth[i] == 0 & strncmp(optElementLog, "VSH", 3) == 0) {
             lithValue[i] = 0;
         }
         // use average vsh method for lithogroups
@@ -185,7 +205,7 @@ void ssbMain(
         }
         else {
             // use derivative method for lithogroups
-            if (vshSmthSecondDeriv[i] >= 0) {
+            if (secondDeriv[i] >= 0) {
                 lithValue[i] = 0;
             }
             else {
@@ -209,8 +229,9 @@ void ssbMain(
     j++;
 
     for (i = 1; i < numpts-1; i++) {
-        if (lithValue[i] != lithValue[i - 1] &
-            lithValue[i] == lithValue[i+1] ) {
+        /*if (lithValue[i] != lithValue[i - 1] &
+            lithValue[i] == lithValue[i+1] ) { */
+        if (lithValue[i] != lithValue[i - 1]) {
 
             // define current element
             eGroupValue[j] = lithValue[i];
@@ -246,12 +267,6 @@ void ssbMain(
         eGroupVsh,
         eGroupTSF);
 
-/*
-    fprintf(stderr, "Number of Element Sets = %d \n", numE);
-    fprintf(stderr, "Average thickness of Element Sets = %f \n", ethicksum / numE);
-    fprintf(stderr, "Minimum thickness of Element Sets = %f \n", ethickmin);
-    fprintf(stderr, "Maximum thickness of Element Sets = %f \n", ethickmax);
-    */
 
     // generate lithology of Element sets
     for (i = 0; i < numE; i++) {
@@ -310,10 +325,12 @@ void ssbMain(
     double* esVsh;
     double* esThick;
     double* esTSF;
+    double* esShaleThick;
     allocateMemory1DD(&esDepth, numE, 0);
     allocateMemory1DD(&esVsh, numE, 0);
     allocateMemory1DD(&esThick, numE, 0);
     allocateMemory1DD(&esTSF, numE, 0);
+    allocateMemory1DD(&esShaleThick, numE, 0);
     char esName[LGROUPSIZE][10] = { {0} };
     char esColour[LGROUPSIZE][15] = { {0} };
 
@@ -330,11 +347,18 @@ void ssbMain(
             esDepth[j] = eGroupDepth[numE];
             j++;
          }
+
+        else if (i == numE-1 & eGroupValue[i] == 0) {
+            // base surface is base of ES
+            esDepth[j] = eGroupDepth[numE];
+            j++;
+        }
         else if (eGroupValue[i] == 0 &
             eGroupValue[i-1] == 1 &
             eGroupValue[i+1] == 1) {
             // top of sand/shale couplet is top of ES unit
             esDepth[j] = eGroupDepth[i];
+            esShaleThick[j] = eGroupThick[i + 1];
             j++;
         }
     }
@@ -375,7 +399,7 @@ void ssbMain(
     fprintf(stderr, "number of Element Sets = %d \n", numES);
 
     for (k = 0; k <= numES; k++) {
-        fprintf(esfile, "%f, %s, %s, %f, %f, %f \n", esDepth[k], esName[k], esColour[k], esThick[k], esVsh[k], esTSF[k]);
+        fprintf(esfile, "%f, %s, %s, %f, %f, %f, %f \n", esDepth[k], esName[k], esColour[k], esThick[k], esShaleThick[k], esVsh[k], esTSF[k]);
     }
 
     fclose(esfile);
@@ -388,7 +412,6 @@ void ssbMain(
     //  Zone between shale breaks is called Element Complex Set (ECS)
 
     // top surface is treated as top of ECS
-
     int numECS;
     int ecsframecnt;
     double ecsthicksum, ecsthickmin, ecsthickmax, ecsvshsum;
@@ -410,28 +433,77 @@ void ssbMain(
     ecsvshsum = 0;
   */
 
+    if (strncmp(ecsMethod, "SB", 2) == 0) {
 
-   for (j = 0; j <= numE; j++) {
-       if (j == 0) {
-           ecsDepth[k] = eGroupDepth[j];
-           k++;
-           //fprintf(stderr, "Top at  = %f \n ", ecsDepth[k]);
-           
-       }
-       else if (j == numE) {
-           ecsDepth[k] = eGroupDepth[j];
-           //fprintf(stderr, "Base at  = %f \n ", ecsDepth[k]);
-           k++;
+        for (j = 0; j <= numES; j++) {
+            if (j == 0) {
+                ecsDepth[k] = esDepth[j];
+                k++;
+                //fprintf(stderr, "Top at  = %f \n ", ecsDepth[k]);
 
-       } else if (eGroupValue[j-1] == 1 &
-           eGroupValue[j + 1] == 1 &
-           eGroupThick[j - 1] > eGroupThick[j + 1] ) {
-           ecsDepth[k] = eGroupDepth[j];
-           k++;
-           //fprintf(stderr, "shale break at  = %f \n ", ecsDepth[k]);
-           
-       }
+            }
+            else if (j == numES) {
+                ecsDepth[k] = esDepth[j];
+                //fprintf(stderr, "Base at  = %f \n ", ecsDepth[k]);
+                k++;
+
+            }
+            else if (esShaleThick[j -1] > esShaleThick[j]) {
+                
+                /*(eGroupValue[j - 1] == 1 &
+                eGroupValue[j + 1] == 1 &
+                eGroupThick[j - 1] > eGroupThick[j + 1])  */
+
+                ecsDepth[k] = esDepth[j];
+                k++;
+
+                //fprintf(stderr, "shale break at  = %f \n ", ecsDepth[k]);
+
+            }
+        }
     }
+    else if (strncmp(ecsMethod, "TSF", 3) == 0) {
+        for (j = 0; j <= numES; j++) {
+            if (j == 0) {
+                ecsDepth[k] = esDepth[j];
+                k++;
+                //fprintf(stderr, "Top at  = %f \n ", ecsDepth[k]);
+
+            }
+            else if (j == numES) {
+                ecsDepth[k] = esDepth[j];
+                //fprintf(stderr, "Base at  = %f \n ", ecsDepth[k]);
+                k++;
+
+            }
+            else if (esTSF[j] < esTSF[j + 1] &
+                esTSF[j - 1] > esTSF[j] &
+                esTSF[j - 2] < esTSF[j - 1]) {
+
+                ecsDepth[k] = esDepth[j];
+                fprintf(stderr, "ecs type 1  = %f \n ", ecsDepth[k]);
+                k++;
+
+            } else if (esTSF[j + 1] < esTSF[j] &
+                esTSF[j + 2] > esTSF[j + 1] &
+                esTSF[j - 1] > esTSF[j] &
+                esTSF[j - 2] < esTSF[j - 1]) {
+
+                ecsDepth[k] = esDepth[j];
+                fprintf(stderr, "ecs type 2  = %f \n ", ecsDepth[k]);
+                k++;
+
+            } else if (esTSF[j - 1] > esTSF[j] &
+                esTSF[j - 2] < esTSF[j - 1]) {
+
+            ecsDepth[k] = esDepth[j];
+            fprintf(stderr, "ecs type 3  = %f \n ", ecsDepth[k]);
+            k++;
+
+    }
+        }
+    }
+
 
    numECS = k - 1;
 
@@ -480,7 +552,7 @@ void ssbMain(
 
    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    //  Now need to find parasequence tops....
-   //  Find when TSF goes up
+   //  Find when TSF goes up (and VSH goes up)
    //  Zone between increasinf TSF tops are called parasequences
 
    int numPS;
@@ -512,7 +584,15 @@ void ssbMain(
            k++;
 
        }
-       else if (ecsTSF[j-1] > ecsTSF[j]) {
+       else if ((ecsTSF[j] < ecsTSF[j + 1] &
+                 ecsTSF[j - 1] > ecsTSF[j] &
+                 ecsVsh[j - 1] >= ecsVsh[j] &
+                 ecsTSF[j - 2] < ecsTSF[j - 1]) |
+                (ecsTSF[j + 1] < ecsTSF[j] &
+                 ecsTSF[j + 2] > ecsTSF[j + 1] &
+                 ecsTSF[j - 1] > ecsTSF[j] &
+                 ecsTSF[j - 2] < ecsTSF[j - 1] ))
+                  {
            psDepth[k] = ecsDepth[j];
            k++;
        }

@@ -30,12 +30,13 @@ void ssbFromLoglan(
     double *grLog, 
     double *vshLog,
     char* lithgroupMethod,
+    char* ecsMethod,
+    char* optElementLog,
     double lithGroupMinThick,
     double *vshSmth,
-    double* vshFirstDeriv,
-    double* vshSecondDeriv,
-    double* vshSmthFirstDeriv,
-    double* vshSmthSecondDeriv,
+    double* grSmth,
+    double* firstDeriv,
+    double* secondDeriv,
     double * lithLogValue)
 
 {
@@ -46,16 +47,6 @@ void ssbFromLoglan(
 
     int numLithGroups = 0;
 
-/*
-    double* lithGroupDepth;
-    double* lithGroupThick;
-    double* lithGroupVsh;
-    double* lithGroupValue;
-    allocateMemory1DD(&lithGroupDepth, numpts, 0);
-    allocateMemory1DD(&lithGroupThick, numpts,0);
-    allocateMemory1DD(&lithGroupVsh, numpts, 0);
-    allocateMemory1DD(&lithGroupValue, numpts, 0);
-*/
 
    /* struct inputLogData inData;
     inData.depth = depthLog;
@@ -95,64 +86,16 @@ void ssbFromLoglan(
         grLog,
         vshLog,
         lithgroupMethod,
+        ecsMethod,
+        optElementLog,
         vshSmth,
-        vshFirstDeriv,
-        vshSecondDeriv,
-        vshSmthFirstDeriv,
-        vshSmthSecondDeriv,
+        grSmth,
+        firstDeriv,
+        secondDeriv,
         lithLogValue,
         lithGroupMinThick,
         &numLithGroups);
 
-/*    for (i = 0; i < numLithGroups-1; i++) {
-        if (lithGroupValue[i] == 1) {
-            //fprintf(stderr, "lithgroup %d - ", i);
-            strncpy(lithGroupLith[i], "sh", 2);
-        }
-        else {
-            strncpy(lithGroupLith[i], "ss", 2);
-        }       
-    }
 
-
-    grpcnt = 1;
-    for (i = numLithGroups - 2; i >= 0; i--, grpcnt++) {
-        sprintf(lithGroupName[i], "ES-%d", grpcnt);
-    }
-
-    
-
-    //write out results to .csv file
-    FILE* vshlgfile;
-
-    //fprintf(stderr, "numgrps = %d \n", *numLithGroups);
-
-    vshlgfile = fopen("./data/vshlithogroup.csv", "w");
-    if (vshlgfile != NULL) {
-        fprintf(stderr, "./data/vshlithogroup.csv has been opened for write \n");
-    }
-
-    fprintf(stderr, "numgrps = %d \n", numLithGroups);
-
-    grpcnt = 1;
-    for (i = numLithGroups - 2; i >= 0; i--) {
-        fprintf(stderr, "name = %s \n", lithNameptr[i]);
-    }
-
-    for (i = 0; i < numLithGroups; i++) {
-        fprintf(vshlgfile, "%f, %f, %s, %s, %f \n", lithGroupDepth[i], lithGroupThick[i], &lithGroupLith[i], &lithGroupName[i], lithGroupVsh[i]);
-    }
-
-    fclose(vshlgfile);
-
-
-
-    // free memory
-    for (i = 0; i < LGROUPSIZE; i++) {
-        free(lithNameptr[i]);
-    }
-    free(lithNameptr);
-
-    */
 
 }

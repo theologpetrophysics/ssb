@@ -11,12 +11,13 @@ extern "C" {
         double *grLog,
         double *vshLog,
         char* lithgroupMethod,
+        char* ecsMethod,
+        char* optElementLog,
         double lithGroupMinThick,
         double *vshSmth,
-        double* vshFirstDeriv,
-        double* vshSecondDeriv,
-        double* vshSmthFirstDeriv,
-        double* vshSmthSecondDeriv,
+        double* grSmth,
+        double* firstDeriv,
+        double* secondDeriv,
         double *lithLogValue
     );
 
