@@ -64,6 +64,7 @@ void calcBedVsh(
 }
 
 
+
 void ssbMain(
     int numpts,
     int halfSmthWindow,
@@ -73,6 +74,8 @@ void ssbMain(
     double* vsh,
     char* lithGroupMethod,
     char* ecsMethod,
+    double ecsShaleBreakLimit,
+    char* tsfPickMethod,
     char* optElementLog,
     double* vshSmth,
     double* grSmth,
@@ -168,19 +171,19 @@ void ssbMain(
     int numE;
     int eframecnt;
     double ethicksum, ethickmin, ethickmax, evshsum;
-    double* eGroupDepth;
-    double* eGroupThick;
-    double* eGroupVsh;
-    double* eGroupValue;
-    double* eGroupTSF;
-    allocateMemory1DD(&eGroupDepth, numpts, 0);
-    allocateMemory1DD(&eGroupThick, numpts, 0);
-    allocateMemory1DD(&eGroupVsh, numpts, 0);
-    allocateMemory1DD(&eGroupTSF, numpts, 0);
-    allocateMemory1DD(&eGroupValue, numpts, 0);
-    char eGroupName[LGROUPSIZE][10] = { {0} };
-    char eGroupLith[LGROUPSIZE][5] = { {0} };
-    char esGroupColour[LGROUPSIZE][15] = { {0} };
+    double* eDepth;
+    double* eThick;
+    double* eVsh;
+    double* eValue;
+    double* eTSF;
+    allocateMemory1DD(&eDepth, numpts, 0);
+    allocateMemory1DD(&eThick, numpts, 0);
+    allocateMemory1DD(&eVsh, numpts, 0);
+    allocateMemory1DD(&eTSF, numpts, 0);
+    allocateMemory1DD(&eValue, numpts, 0);
+    char eName[LGROUPSIZE][10] = { {0} };
+    char eLith[LGROUPSIZE][5] = { {0} };
+    char eColour[LGROUPSIZE][15] = { {0} };
 
 
     // First pick sand/shale depths
@@ -194,7 +197,11 @@ void ssbMain(
         }
         // use average vsh method for lithogroups
         else if (strncmp(lithGroupMethod, "AVERAGE", 7) == 0) {
-            if (vsh[i] >= vshSmth[i]) {
+
+            if (strncmp(optElementLog, "VSH", 3) == 0 &
+                vsh[i] >= vshSmth[i] |
+                strncmp(optElementLog, "GR", 2) == 0 &
+                gr[i] >= grSmth[i]) {
                 //shale lithogroup
                 lithValue[i] = 1;
             }
@@ -218,12 +225,12 @@ void ssbMain(
     j = 0;
 
     // start with top frame and define group tops
-    eGroupDepth[j] = depth[0];
+    eDepth[j] = depth[0];
     if (lithValue[0] == 1) {
-        eGroupValue[j] = 1;
+        eValue[j] = 1;
     }
     else {
-        eGroupValue[j] = 0;
+        eValue[j] = 0;
     }
 
     j++;
@@ -234,13 +241,13 @@ void ssbMain(
         if (lithValue[i] != lithValue[i - 1]) {
 
             // define current element
-            eGroupValue[j] = lithValue[i];
-            eGroupDepth[j] = depth[i];
+            eValue[j] = lithValue[i];
+            eDepth[j] = depth[i];
             
             j++;
 
             if (debug == 1) {
-                fprintf(stderr, "grp depth  = %f \n ", eGroupDepth[j]);
+                fprintf(stderr, "grp depth  = %f \n ", eDepth[j]);
             }
 
         }
@@ -248,10 +255,10 @@ void ssbMain(
 
     i = numpts-1;
     // last frame of log data
-    eGroupValue[j] = MISSING;
-    eGroupDepth[j] = depth[i];
-    eGroupThick[j] = MISSING;
-    eGroupVsh[j] = MISSING;
+    eValue[j] = MISSING;
+    eDepth[j] = depth[i];
+    eThick[j] = MISSING;
+    eVsh[j] = MISSING;
     j++;
    
     numE = j - 1;
@@ -262,29 +269,29 @@ void ssbMain(
         depth,
         vsh,
         numE,
-        eGroupDepth,
-        eGroupThick,
-        eGroupVsh,
-        eGroupTSF);
+        eDepth,
+        eThick,
+        eVsh,
+        eTSF);
 
 
     // generate lithology of Element sets
     for (i = 0; i < numE; i++) {
-        if (eGroupValue[i] == 1) {
+        if (eValue[i] == 1) {
             //fprintf(stderr, "lithgroup %d - ", i);
-            strncpy(eGroupLith[i], "sh", 2);
-            strncpy(esGroupColour[i], "gray15", 6);
+            strncpy(eLith[i], "sh", 2);
+            strncpy(eColour[i], "gray", 6);
         }
         else {
-            strncpy(eGroupLith[i], "ss", 2);
-            strncpy(esGroupColour[i], "yellow", 6);
+            strncpy(eLith[i], "ss", 2);
+            strncpy(eColour[i], "yellow", 6);
         }
     }
        
     // generate name of element sets
     grpcnt = 1;
     for (i = numE - 1; i >= 0; i--, grpcnt++) {
-        sprintf(eGroupName[i], "E-%d", grpcnt);        
+        sprintf(eName[i], "E-%d", grpcnt);        
     }
   
     //write out results to .csv file
@@ -305,7 +312,7 @@ void ssbMain(
     }
 
     for (i = 0; i <= numE; i++) {
-        fprintf(vshlgfile, "%f, %f, %s, %s, %s, %f \n", eGroupDepth[i], eGroupThick[i], eGroupLith[i], eGroupName[i], esGroupColour[i], eGroupVsh[i]);
+        fprintf(vshlgfile, "%f, %f, %s, %s, %s, %f \n", eDepth[i], eThick[i], eLith[i], eName[i], eColour[i], eVsh[i]);
     }
 
     fclose(vshlgfile);
@@ -339,26 +346,26 @@ void ssbMain(
     for (i = 0; i <= numE; i++) {
         if (i == 0) {
             // top surface is treated as top of ES
-            esDepth[j] = eGroupDepth[i];
+            esDepth[j] = eDepth[i];
             j++;
         }
         else if (i == numE) {
             // base surface is base of ES
-            esDepth[j] = eGroupDepth[numE];
+            esDepth[j] = eDepth[numE];
             j++;
          }
 
-        else if (i == numE-1 & eGroupValue[i] == 0) {
+        else if (i == numE-1 & eValue[i] == 0) {
             // base surface is base of ES
-            esDepth[j] = eGroupDepth[numE];
+            esDepth[j] = eDepth[numE];
             j++;
         }
-        else if (eGroupValue[i] == 0 &
-            eGroupValue[i-1] == 1 &
-            eGroupValue[i+1] == 1) {
+        else if (eValue[i] == 0 &
+            eValue[i-1] == 1 &
+            eValue[i+1] == 1) {
             // top of sand/shale couplet is top of ES unit
-            esDepth[j] = eGroupDepth[i];
-            esShaleThick[j] = eGroupThick[i + 1];
+            esDepth[j] = eDepth[i];
+            esShaleThick[j] = eThick[i + 1];
             j++;
         }
     }
@@ -373,7 +380,7 @@ void ssbMain(
             strncpy(esColour[k], "light_cyan", 10);
         }
         else {
-            strncpy(esColour[k], "light_gray", 10);
+            strncpy(esColour[k], "light_blue", 10);
         }
     }
 
@@ -418,11 +425,22 @@ void ssbMain(
     double* ecsDepth;
     double* ecsVsh;
     double* ecsThick;
+    double* ecsSbThick;
+    double* ecsSsThick;
     double* ecsTSF;
+    double* ecsESsVsh;
+    double* ecsEShVsh;
+    double* ecsSbRatio;
+
     allocateMemory1DD(&ecsDepth, numES, 0);
     allocateMemory1DD(&ecsVsh, numES, 0);
     allocateMemory1DD(&ecsThick, numES, 0);
+    allocateMemory1DD(&ecsSbThick, numES, 0);
+    allocateMemory1DD(&ecsSbRatio, numES, 0);
+    allocateMemory1DD(&ecsSsThick, numES, 0);
     allocateMemory1DD(&ecsTSF, numES, 0);
+    allocateMemory1DD(&ecsESsVsh, numES, 0);
+    allocateMemory1DD(&ecsEShVsh, numES, 0);
     char ecsName[LGROUPSIZE][10] = { {0} };
     char ecsColour[LGROUPSIZE][15] = { {0} };
 
@@ -448,17 +466,18 @@ void ssbMain(
                 k++;
 
             }
-            else if (esShaleThick[j -1] > esShaleThick[j]) {
+            else if (esShaleThick[j - 1] > esShaleThick[j] * (1.0 + ecsShaleBreakLimit)) {
                 
-                /*(eGroupValue[j - 1] == 1 &
-                eGroupValue[j + 1] == 1 &
-                eGroupThick[j - 1] > eGroupThick[j + 1])  */
-
                 ecsDepth[k] = esDepth[j];
+                ecsSbThick[k] = esShaleThick[j - 1];
+                ecsSsThick[k] = esThick[j - 1] - esShaleThick[j - 1];
+                // calculate shale break thickness change ratio for calibration
+                ecsSbRatio[k] = esShaleThick[j - 1] / esShaleThick[j];
                 k++;
-
-                //fprintf(stderr, "shale break at  = %f \n ", ecsDepth[k]);
-
+                
+                fprintf(stderr, "shale thick (%s)  = %f \n ", esName[j - 1], esShaleThick[j - 1]);
+                fprintf(stderr, "shale thick (%s)  = %f \n ", esName[j], esShaleThick[j]);
+                fprintf(stderr, "---\n"); 
             }
         }
     }
@@ -500,7 +519,7 @@ void ssbMain(
             fprintf(stderr, "ecs type 3  = %f \n ", ecsDepth[k]);
             k++;
 
-    }
+            }
         }
     }
 
@@ -531,6 +550,36 @@ void ssbMain(
        ecsThick,
        ecsVsh,
        ecsTSF);
+
+   // calculate the average Vsh of SS/SH elements within each ECS
+   double ssvshsum, ssthicksum, shvshsum, shthicksum;
+
+   for (j = 0; j <= numECS; j++) {
+       ssvshsum = 0;
+       ssthicksum = 0;
+       shvshsum = 0;
+       shthicksum = 0;
+
+       for (i = 0; i <= numE; i++) {
+           if (eDepth[i] >= ecsDepth[j] &
+               eDepth[i] < ecsDepth[j + 1])
+           {
+               if (eValue[i] == 0)
+               {
+                   ssvshsum += eVsh[i] * eThick[i];
+                   ssthicksum += eThick[i];
+               }
+               ecsESsVsh[j] = ssvshsum / ssthicksum;
+
+               if (eValue[i] == 1)
+               {
+                   shvshsum += eVsh[i] * eThick[i];
+                   shthicksum += eThick[i];
+               }
+               ecsEShVsh[j] = shvshsum / shthicksum;
+           }
+       }
+   }
        
 
    //write out results to .csv file
@@ -543,12 +592,11 @@ void ssbMain(
    fprintf(stderr, "number of Element Complex Sets = %d \n", numECS);
 
    for (k = 0; k <= numECS; k++) {
-       fprintf(ecsfile, "%f, %s, %s, %f, %f, %f \n", ecsDepth[k], ecsName[k], ecsColour[k], ecsThick[k], ecsVsh[k], ecsTSF[k]);
+       fprintf(ecsfile, "%f, %s, %s, %f, %f, %f, %f, %f, %f, %f, %f \n", ecsDepth[k], ecsName[k], ecsColour[k], 
+           ecsThick[k], ecsVsh[k], ecsTSF[k], ecsSbThick[k], ecsSbRatio[k], ecsSsThick[k], ecsESsVsh[k], ecsEShVsh[k]);
    }
 
    fclose(ecsfile);
-
-
 
    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    //  Now need to find parasequence tops....
@@ -568,6 +616,7 @@ void ssbMain(
    allocateMemory1DD(&psTSF, numECS, 0);
    char psName[LGROUPSIZE][10] = { {0} };
    char psColour[LGROUPSIZE][20] = { {0} };
+   char psMethod[LGROUPSIZE][20] = { {0} };
 
    k = 0;
 
@@ -584,18 +633,62 @@ void ssbMain(
            k++;
 
        }
-       else if ((ecsTSF[j] < ecsTSF[j + 1] &
-                 ecsTSF[j - 1] > ecsTSF[j] &
-                 ecsVsh[j - 1] >= ecsVsh[j] &
-                 ecsTSF[j - 2] < ecsTSF[j - 1]) |
-                (ecsTSF[j + 1] < ecsTSF[j] &
-                 ecsTSF[j + 2] > ecsTSF[j + 1] &
-                 ecsTSF[j - 1] > ecsTSF[j] &
-                 ecsTSF[j - 2] < ecsTSF[j - 1] ))
-                  {
+       // very basic TSF increase (local TSF minimum)
+       /*else if (strncmp(tsfPickMethod, "TSF", 3) == 0 &
+           ecsTSF[j] < ecsTSF[j + 1] &
+           ecsTSF[j - 1] > ecsTSF[j] * 1.05 &
+           ecsVsh[j - 1] >= ecsVsh[j])
+       {
            psDepth[k] = ecsDepth[j];
+           strncpy(psMethod[k], "TSf/Vsh", 15);
+           k++;
+       }*/ 
+       // TSF increase with decreasing trend above
+       else if ((strncmp(tsfPickMethod, "TSF", 3) == 0 | 
+           strncmp(tsfPickMethod, "EITHER", 6) == 0) &
+           ecsTSF[j] < ecsTSF[j + 1] &
+           ecsTSF[j - 1] > ecsTSF[j] &
+           ecsVsh[j - 1] >= ecsVsh[j] &
+           ecsTSF[j - 2] < ecsTSF[j - 1]) 
+       {
+           psDepth[k] = ecsDepth[j];
+           strncpy(psMethod[k], "TSF/Vsh + up trend ", 18);
+           k++;
+       } 
+        // allowance for transgressive top
+       else if ((strncmp(tsfPickMethod, "TSF", 3) == 0 |
+           strncmp(tsfPickMethod, "EITHER", 6) == 0) &
+            ecsTSF[j - 1] > ecsTSF[j] &
+            ecsVsh[j - 1] >= ecsVsh[j] &
+            ecsTSF[j - 2] < ecsTSF[j - 1] &              
+            ecsTSF[j + 1] < ecsTSF[j] &
+            ecsTSF[j + 2] > ecsTSF[j + 1])
+            
+       {
+           psDepth[k] = ecsDepth[j];
+           strncpy(psMethod[k], "TSF/Vsh with ts ", 20);
+           k++;
+       } 
+
+       else if ((strncmp(tsfPickMethod, "SB", 2) == 0 |
+           strncmp(tsfPickMethod, "EITHER", 6) == 0) &
+           ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
+           ecsESsVsh[j] < ecsESsVsh[j-1] ) 
+       {
+           psDepth[k] = ecsDepth[j];
+           strncpy(psMethod[k], "SB thickness & GS", 17);
            k++;
        }
+       /*
+       else if (strncmp(tsfPickMethod, "SB", 2) == 0 &
+           ecsSbThick[j] >= ecsSbThick[j + 1] * 0.9 &
+           ecsSsThick[j] < ecsSsThick[j + 1])
+       {
+           psDepth[k] = ecsDepth[j];
+           strncpy(psMethod[k], "SS thickness", 12);
+           k++;
+       } */
+
    }
 
    numPS = k - 1;
@@ -634,7 +727,7 @@ void ssbMain(
    fprintf(stderr, "number of Para-sequences = %d \n", numPS);
 
    for (k = 0; k <= numPS; k++) {
-       fprintf(psfile, "%f, %s, %s, %f, %f, %f \n", psDepth[k], psName[k], psColour[k], psThick[k], psVsh[k], psTSF[k]);
+       fprintf(psfile, "%f, %s, %s, %f, %f, %f, %s \n", psDepth[k], psName[k], psColour[k], psThick[k], psVsh[k], psTSF[k], psMethod[k]);
    }
 
    fclose(psfile);

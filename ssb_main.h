@@ -11,6 +11,8 @@ extern "C" {
         double *vshLog,
         char* lithgroupMethod,
        char* ecsMethod,
+       double ecsShaleBreakLimit,
+       char* tsfPickMethod,
         char* optElementLog,
         double *vshSmth,
        double* grSmth,

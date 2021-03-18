@@ -11,11 +11,13 @@ DESCRIPTION_DETAIL = "\
 INCLUDES = ssb_from_loglan.h ssb_main.h theolog_general_functions.h
 DESCRIPTION = ""
 MODE:  ARG:             VAR:             TYPE:        REPEAT: DEFAULT:   VALIDATION:   LOCATION: UNIT:   VISIBLE: TAB_LABEL: COMMENT=
-#====  ====             ====             =====        ======= ========   ===========   ========= =====   ======== ========== ========                                               
+#====  ====             ====             =====        ======= ========   ===========   ========= =====   ======== ========== ========                                                 
 INPUT  FILE_IN          file_in          FILE         ""      ""         ""            ""        ""      TRUE     ""         "Input table (pipe)."
 INPUT  FILE_OUT         file_out         FILE         ""      ""         ""            ""        ""      TRUE     ""         "Output table (pipe)."
 IN_OUT LITHGROUP_METHOD lithgroup_method NAME_ALPHA*8 ""      DERIV      DERIV,AVERAGE CONSTANT  ALPHA*8 TRUE     ""         ""
 IN_OUT ECS_METHOD       ecs_method       NAME_ALPHA*8 ""      SB         SB,TSF        CONSTANT  ALPHA*8 TRUE     ""         ""
+IN_OUT SHALEBREAK_LIMIT shalebreak_limit NAME_REAL    ""      0          0<100,-       CONSTANT  ""      TRUE     ""         "% increase in shale break thickness for ECS definition"
+IN_OUT PS_METHOD        ps_method        NAME_ALPHA*8 ""      SB         SB,TSF,EITHER CONSTANT  ALPHA*8 TRUE     ""         "Spontaneous Potential"
 IN_OUT OPT_ELEMENT_LOG  opt_element_log  NAME_ALPHA*8 ""      VSH        VSH,GR        CONSTANT  ALPHA*8 TRUE     ""         "Choose which log is ued to define element boundaries"
 IN_OUT DEPTH_WINDOW     depth_window     NAME_REAL    ""      3.0        ""            CONSTANT  M       TRUE     ""         "depth window for averaging VSH lithogroups"
 IN_OUT TVD_VSHLITH_MIN  tvd_vshlith_min  NAME_REAL    ""      .3         ""            CONSTANT  M       TRUE     ""         "minimum thickness for VSH lithology groups"
