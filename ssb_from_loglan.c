@@ -35,11 +35,11 @@ void ssbFromLoglan(
     char* tsfPickMethod,
     char* optElementLog,
     double lithGroupMinThick,
-    double *vshSmth,
+    double* vshSmth,
     double* grSmth,
     double* firstDeriv,
     double* secondDeriv,
-    double * lithLogValue)
+    double* lithLogValue)
 
 {
     int i, k, j, grpcnt;
@@ -47,7 +47,7 @@ void ssbFromLoglan(
     int halfSmthWindow;
     double sampleRate;
 
-    int numLithGroups = 0;
+    //int numLithGroups = 0;
 
 
    /* struct inputLogData inData;
@@ -77,7 +77,7 @@ void ssbFromLoglan(
         vshLog[i] = fmax(vshLog[i], 0.0);
     }
 
-
+    fprintf(stderr, "before deriv... \n \n");
 
     //call main SSB workflow
     ssbMain(
@@ -97,8 +97,7 @@ void ssbFromLoglan(
         firstDeriv,
         secondDeriv,
         lithLogValue,
-        lithGroupMinThick,
-        &numLithGroups);
+        lithGroupMinThick);
 
 
 

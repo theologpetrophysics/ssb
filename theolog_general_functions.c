@@ -67,7 +67,7 @@ double smoothLogDataSimple(
     double sValue;
     double logDataSum;
 
-    int debug = 0;
+    int debug = 1;
 
     if (debug == 1) {
         fprintf(stderr, "Number of frames is %d \n", numFrames);
