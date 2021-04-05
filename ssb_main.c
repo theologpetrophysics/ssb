@@ -236,9 +236,10 @@ void ssbMain(
     j++;
 
     for (i = 1; i < numpts-1; i++) {
-        /*if (lithValue[i] != lithValue[i - 1] &
-            lithValue[i] == lithValue[i+1] ) { */
-        if (lithValue[i] != lithValue[i - 1]) {
+        if (lithValue[i] != lithValue[i - 1] &
+            lithValue[i] == lithValue[i+1] &
+            lithValue[i - 1] == lithValue[i - 2])
+        {
 
             // define current element
             eValue[j] = lithValue[i];
@@ -288,7 +289,7 @@ void ssbMain(
         }
     }
        
-    // generate name of element sets
+    // generate name of elements
     grpcnt = 1;
     for (i = numE - 1; i >= 0; i--, grpcnt++) {
         sprintf(eName[i], "E-%d", grpcnt);        
@@ -451,7 +452,8 @@ void ssbMain(
     ecsvshsum = 0;
   */
 
-    if (strncmp(ecsMethod, "SB", 2) == 0) {
+    if (strncmp(ecsMethod, "SB", 2) == 0 |
+        strncmp(ecsMethod, "EITHER", 6) == 0) {
 
         for (j = 0; j <= numES; j++) {
             if (j == 0) {
@@ -466,7 +468,7 @@ void ssbMain(
                 k++;
 
             }
-            else if (esShaleThick[j - 1] > esShaleThick[j] * (1.0 + ecsShaleBreakLimit)) {
+            else if (esShaleThick[j - 1] >= esShaleThick[j] * (1.0 + ecsShaleBreakLimit)) {
                 
                 ecsDepth[k] = esDepth[j];
                 ecsSbThick[k] = esShaleThick[j - 1];
@@ -475,13 +477,11 @@ void ssbMain(
                 ecsSbRatio[k] = esShaleThick[j - 1] / esShaleThick[j];
                 k++;
                 
-                //fprintf(stderr, "shale thick (%s)  = %f \n ", esName[j - 1], esShaleThick[j - 1]);
-                //fprintf(stderr, "shale thick (%s)  = %f \n ", esName[j], esShaleThick[j]);
-                //fprintf(stderr, "---\n"); 
             }
         }
     }
-    else if (strncmp(ecsMethod, "TSF", 3) == 0) {
+    else if (strncmp(ecsMethod, "TSF", 3) == 0 |
+        strncmp(ecsMethod, "EITHER", 6) == 0) {
         for (j = 0; j <= numES; j++) {
             if (j == 0) {
                 ecsDepth[k] = esDepth[j];
@@ -495,15 +495,15 @@ void ssbMain(
                 k++;
 
             }
-            else if (esTSF[j] < esTSF[j + 1] &
-                esTSF[j - 1] > esTSF[j] &
-                esTSF[j - 2] < esTSF[j - 1]) {
+            else if (esVsh[j - 1] > esVsh[j] &
+                     esTSF[j - 1] > esTSF[j]) {
 
                 ecsDepth[k] = esDepth[j];
-                fprintf(stderr, "ecs type 1  = %f \n ", ecsDepth[k]);
+                //fprintf(stderr, "ecs type 1  = %f \n ", ecsDepth[k]);
                 k++;
 
-            } else if (esTSF[j + 1] < esTSF[j] &
+            } 
+            /* else if (esTSF[j + 1] < esTSF[j] &
                 esTSF[j + 2] > esTSF[j + 1] &
                 esTSF[j - 1] > esTSF[j] &
                 esTSF[j - 2] < esTSF[j - 1]) {
@@ -519,7 +519,7 @@ void ssbMain(
             fprintf(stderr, "ecs type 3  = %f \n ", ecsDepth[k]);
             k++;
 
-            }
+            } */
         }
     }
 
@@ -948,17 +948,26 @@ void ssbMain(
                strncpy(psMethod[k], "TSF-VSH-TREND", 25);
                k++;
            }
-
+           /*
            else if (ecsVsh[j - 1] >= ecsVsh[j])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "TSF-VSH", 15);
                k++;
            }
+           */
            else if (ecsTSF[j - 2] < ecsTSF[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "TSF-TREND ", 20);
+               k++;
+           }
+
+           else if (ecsTSF[j] > ecsTSF[j + 1] &
+                    ecsVsh[j - 1] >= ecsVsh[j])
+           {
+               psDepth[k] = ecsDepth[j];
+               strncpy(psMethod[k], "TSF-VSH-BACKSTEP", 20);
                k++;
            }
        }
@@ -995,55 +1004,6 @@ void ssbMain(
             strncpy(psMethod[k], "TSF-ShBr", 15);
             k++;
        }
-
-       
-       /*
-       // TSF increase + VSH (local TSF minimum)
-       else if ((strncmp(tsfPickMethod, "TSF", 3) == 0 |
-           strncmp(tsfPickMethod, "EITHER", 6) == 0)  &
-           ecsTSF[j - 1] > ecsTSF[j] * 1.05 &
-           ecsVsh[j - 1] >= ecsVsh[j])
-       {
-           psDepth[k] = ecsDepth[j];
-           strncpy(psMethod[k], "TSf/Vsh", 15);
-           k++;
-       } 
-       // TSF increase with decreasing trend above
-       else if ((strncmp(tsfPickMethod, "TSF", 3) == 0 | 
-           strncmp(tsfPickMethod, "EITHER", 6) == 0) &
-           ecsTSF[j - 1] > ecsTSF[j] &
-           ecsVsh[j - 1] >= ecsVsh[j] &
-           ecsTSF[j - 2] < ecsTSF[j - 1]) 
-       {
-           psDepth[k] = ecsDepth[j];
-           strncpy(psMethod[k], "TSF/Vsh + up trend ", 18);
-           k++;
-       } 
-        // allowance for transgressive top
-       else if ((strncmp(tsfPickMethod, "TSF", 3) == 0 |
-           strncmp(tsfPickMethod, "EITHER", 6) == 0) &
-            ecsTSF[j - 1] > ecsTSF[j] &
-            ecsVsh[j - 1] >= ecsVsh[j] &
-            ecsTSF[j - 2] < ecsTSF[j - 1] &              
-            ecsTSF[j + 1] < ecsTSF[j] &
-            ecsTSF[j + 2] > ecsTSF[j + 1])
-            
-       {
-           psDepth[k] = ecsDepth[j];
-           strncpy(psMethod[k], "TSF/Vsh with ts ", 20);
-           k++;
-       }
-       */       
-
-       /*
-       else if (strncmp(tsfPickMethod, "SB", 2) == 0 &
-           ecsSbThick[j] >= ecsSbThick[j + 1] * 0.9 &
-           ecsSsThick[j] < ecsSsThick[j + 1])
-       {
-           psDepth[k] = ecsDepth[j];
-           strncpy(psMethod[k], "SS thickness", 12);
-           k++;
-       } */
 
    }
 
@@ -1122,7 +1082,7 @@ void ssbMain(
    k = 0;
 
    for (j = 0; j <= numPS; j++) {
-       fprintf(stderr, "PS number = %d \n", j);
+      // fprintf(stderr, "PS number = %d \n", j);
 
        if (j == 0)
        {
@@ -1154,7 +1114,7 @@ void ssbMain(
        }
        else
        {
-           fprintf(stderr, "PS number = %d \n", numPS);
+          // fprintf(stderr, "PS number = %d \n", numPS);
            if (psTSF[j] < psTSF[j - 1] &
                psVsh[j - 1] > psVsh[j - 2] * 0.9 &
                psTSF[j - 1] > psTSF[j - 2] &
@@ -1166,8 +1126,30 @@ void ssbMain(
                k++;
            }
            else if (psTSF[j] < psTSF[j - 1] &
+               psVsh[j] <= psVsh[j - 1] &
+               psVsh[j] > psVsh[j + 1] &
+               psTSF[j - 1] > psTSF[j - 2] &
+               psTSF[j] > psTSF[j + 1])
+           {
+
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/TST", 8);
+               k++;
+           }
+           else if (psTSF[j] < psTSF[j - 1] &
+               psVsh[j] <= psVsh[j - 1] &
+               psVsh[j] <= psVsh[j + 1] &
+               psTSF[j - 1] > psTSF[j - 2] &
+               psTSF[j] > psTSF[j + 1])
+           {
+
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/LST", 8);
+               k++;
+           }
+           else if (psTSF[j] < psTSF[j - 1] &
                     psTSF[j - 1] < psTSF[j - 2] &
-                    psVsh[j - 1] < psVsh[j - 2] &
+                    psVsh[j - 1] < psVsh[j - 2] * 0.95 &
                     psTSF[j] < psTSF[j + 1])
            {
 
@@ -1177,7 +1159,7 @@ void ssbMain(
            }
            else if (psTSF[j] < psTSF[j - 1] &
                psTSF[j - 1] < psTSF[j - 2] &
-               psVsh[j - 1] > psVsh[j - 2] &
+               psVsh[j - 1] > psVsh[j - 2] * 0.95 &
                psTSF[j] < psTSF[j + 1])
            {
 
@@ -1222,13 +1204,89 @@ void ssbMain(
        fprintf(stderr, "./data/fos.csv has been opened for write \n");
    }
 
-   fprintf(stderr, "number of fourth-order sequences = %d \n", numFOS);
+   fprintf(stderr, "number of fourth-order surfaces = %d \n", numFOS);
 
    for (k = 0; k <= numFOS; k++) {
        fprintf(fosfile, "%f, %s, %s, %f, %f, %f, %s \n", fosDepth[k], fosName[k], fosColour[k], fosThick[k], fosVsh[k], fosTSF[k], fosType[k]);
    }
 
    fclose(fosfile);
+
+   
+   // generate the sequences
+   int numS;
+   double* sDepth;
+   double* sVsh;
+   double* sThick;
+   double* sTSF;
+   allocateMemory1DD(&sDepth, numFOS, 0);
+   allocateMemory1DD(&sVsh, numFOS, 0);
+   allocateMemory1DD(&sThick, numFOS, 0);
+   allocateMemory1DD(&sTSF, numFOS, 0);
+   char sName[LGROUPSIZE][10] = { {0} };
+   char sType[LGROUPSIZE][10] = { {0} };
+   char sColour[LGROUPSIZE][20] = { {0} };
+
+   k = 0;
+
+   for (j = 0; j <= numFOS; j++) {
+
+       if (j == 0) {
+           sDepth[k] = fosDepth[j];
+           strncpy(sType[k], "TOP", 3);
+           k++;
+       }
+       else if (j == numFOS) {
+           sDepth[k] = fosDepth[j];
+           strncpy(sType[k], "BASE", 4);
+           k++;
+       }
+       else if (strncmp(fosType[j], "HST", 3) == 0) {
+           sDepth[k] = fosDepth[j];
+           strncpy(sType[k], "Sb?", 9);
+           k++;
+       }
+   }
+
+   numS = k - 1;
+
+   // generate thickness, VSH and TSF of each Sequence
+   calcBedVsh(
+       numpts,
+       depth,
+       vsh,
+       numS,
+       sDepth,
+       sThick,
+       sVsh,
+       sTSF);
+
+   // generate name of fourth-order sequences
+   grpcnt = 1;
+   for (k = numS - 1; k >= 0; k--, grpcnt++) {
+       sprintf(sName[k], "S-%d", grpcnt);
+       if (grpcnt % 2 == 0) {
+           strncpy(sColour[k], "dark_sea_green", 18);
+       }
+       else {
+           strncpy(sColour[k], "light_goldenrod", 18);
+       }
+   }
+
+   //write out results to .csv file
+   FILE* sfile;
+   sfile = fopen("./data/s.csv", "w");
+   if (sfile != NULL) {
+       fprintf(stderr, "./data/s.csv has been opened for write \n");
+   }
+
+   fprintf(stderr, "number of sequences = %d \n", numS);
+
+   for (k = 0; k <= numS; k++) {
+       fprintf(sfile, "%f, %s, %s, %f, %f, %f, %s \n", sDepth[k], sName[k], sColour[k], sThick[k], sVsh[k], sTSF[k], sType[k]);
+   }
+
+   fclose(sfile);
 
 
 }
