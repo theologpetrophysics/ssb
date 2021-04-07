@@ -10,7 +10,8 @@ INPUT
        LITHGROUP_METHOD       ALPHA*8   /*
        ECS_METHOD             ALPHA*8   /*
        SHALEBREAK_LIMIT                 /* % increase in shale break thickness for ECS definition
-       PS_METHOD              ALPHA*8   /* Spontaneous Potential
+       PS_METHOD              ALPHA*8   /* Parasequence picking method
+       PS_INCLUDE_BACKSTEPS   INT       /* Parasequence picking method
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -43,7 +44,8 @@ OUTPUT
        LITHGROUP_METHOD       ALPHA*8   /*
        ECS_METHOD             ALPHA*8   /*
        SHALEBREAK_LIMIT                 /* % increase in shale break thickness for ECS definition
-       PS_METHOD              ALPHA*8   /* Spontaneous Potential
+       PS_METHOD              ALPHA*8   /* Parasequence picking method
+       PS_INCLUDE_BACKSTEPS   INT       /* Parasequence picking method
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -94,6 +96,7 @@ enddo
                   ecs_method,
                   shalebreak_limit/100.0,
                   ps_method,
+                  ps_include_backsteps,
                   opt_element_log,
                   tvd_vshlith_min,
                   vsh_smth_arr,
