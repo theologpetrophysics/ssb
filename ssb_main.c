@@ -74,6 +74,8 @@ void ssbMain(
     double ecsShaleBreakLimit,
     char* psPickMethod,
     int psIncludeBacksteps,
+    double psEsVshRatio,
+    double fosNoiseFact,
     char* optElementLog,
     double* vshSmth,
     double* grSmth,
@@ -576,7 +578,7 @@ void ssbMain(
    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    //  Now need to find parasequence tops....
    //  Find when TSF goes up (and VSH goes up)
-   //  Zone between increasinf TSF tops are called parasequences
+   //  Zone between increasing TSF tops are called parasequences
 
    
    //---------------------------------------------------------------------------------
@@ -615,7 +617,7 @@ void ssbMain(
 
    numBasicPS = k - 1;
 
-   // generate name of Element Complex Sets
+   // generate name of basic TSF tops
    grpcnt = 1;
    for (k = numBasicPS - 1; k >= 0; k--, grpcnt++) {
        sprintf(psBasicName[k], "PS-%d", grpcnt);
@@ -638,7 +640,7 @@ void ssbMain(
 
 
    //---------------------------------------------------------------------------------
-   // find basic PS tops
+   // find PS tops using TSF and VSH
    int numTsfVshPS;
    double* psTsfVshDepth;
    allocateMemory1DD(&psTsfVshDepth, numECS, 0);
@@ -673,7 +675,7 @@ void ssbMain(
 
    numTsfVshPS = k - 1;
 
-   // generate name of Element Complex Sets
+   // generate name of PS tops from TSF and VSH
    grpcnt = 1;
    for (k = numTsfVshPS - 1; k >= 0; k--, grpcnt++) {
        sprintf(psTsfVshName[k], "PS-%d", grpcnt);
@@ -734,7 +736,7 @@ void ssbMain(
    numTrendPS = k - 1;
    fprintf(stderr, "number of Trend Para-sequences = %d \n", numTrendPS);
    
-   // generate name of Element Complex Sets
+   // generate name of PS tops using TSF trend
    grpcnt = 1;
    
    for (k = numTrendPS - 1; k >= 0; k--, grpcnt++) {
@@ -800,7 +802,7 @@ void ssbMain(
 
    numTransPS = k - 1;
 
-   // generate name of Element Complex Sets
+   // generate name of PS tops that have transgressive logic
    grpcnt = 1;
    for (k = numTransPS - 1; k >= 0; k--, grpcnt++) {
        sprintf(psTransName[k], "PS-%d", grpcnt);
@@ -856,7 +858,7 @@ void ssbMain(
 
    numSbPS = k - 1;
 
-   // generate name of Element Complex Sets
+   // generate name of PS tops that are based on shale breaks
    grpcnt = 1;
    for (k = numSbPS - 1; k >= 0; k--, grpcnt++) {
        sprintf(psSbName[k], "PS-%d", grpcnt);
@@ -878,6 +880,7 @@ void ssbMain(
    fclose(psSbfile);
    
    //-----------------------------------------------------------------------------------
+   // this is the actual final PS tops picks
    int numPS;
    int psframecnt;
    double psthicksum, psthickmin, psthickmax, psvshsum;
@@ -914,11 +917,12 @@ void ssbMain(
        else if ((strncmp(psPickMethod, "TSF", 3) == 0 |
            strncmp(psPickMethod, "EITHER", 6) == 0) &
            ecsTSF[j - 1] > ecsTSF[j] * 1.1 &
-           ecsESVshRatio[j] > 1.0)
+           ecsESVshRatio[j] > psEsVshRatio)
        {
 
            if (ecsVsh[j - 1] >= ecsVsh[j] &
-               ecsTSF[j - 2] < ecsTSF[j - 1])
+               ( ecsTSF[j - 2] < ecsTSF[j - 1] |
+                 ecsTSF[j] < ecsTSF[j+1] )  )
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "TSF-VSH-TREND", 25);
@@ -932,7 +936,7 @@ void ssbMain(
                k++;
            }
            */
-           else if (ecsTSF[j - 2] * 1.1 < ecsTSF[j - 1])
+           else if (ecsTSF[j - 2] < ecsTSF[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "TSF-TREND ", 20);
@@ -1046,6 +1050,7 @@ void ssbMain(
    char fosType[LGROUPSIZE][10] = { {0} };
    char fosColour[LGROUPSIZE][20] = { {0} };
    char fosMethod[LGROUPSIZE][20] = { {0} };
+   char fosSysTract[LGROUPSIZE][20] = { {0} };
 
    /*  cant get the external reference to 2D char array to work.....
    pickSequences(
@@ -1091,59 +1096,63 @@ void ssbMain(
            fosDepth[k] = psDepth[j];
            strncpy(fosType[k], "BASE", 4);
        }
+
        else
        {
-          // fprintf(stderr, "PS number = %d \n", numPS);
-           if (psTSF[j] < psTSF[j - 1] &
-               psVsh[j - 1] > psVsh[j - 2] * 0.9 &
-               psTSF[j - 1] > psTSF[j - 2] &
+           if (strncmp(fosType[k - 1], "HST/TST", 7) == 0 &
+               psTSF[j] < psTSF[j - 1] &
                psTSF[j] < psTSF[j + 1])
-           {
-
-               fosDepth[k] = psDepth[j];
-               strncpy(fosType[k], "HST/HST", 8);
-               k++;
-           }
-           else if (psTSF[j] < psTSF[j - 1] &
-               psVsh[j] <= psVsh[j - 1] &
-               psVsh[j] > psVsh[j + 1] &
-               psTSF[j - 1] > psTSF[j - 2] &
-               psTSF[j] > psTSF[j + 1])
-           {
-
-               fosDepth[k] = psDepth[j];
-               strncpy(fosType[k], "HST/TST", 8);
-               k++;
-           }
-           else if (psTSF[j] < psTSF[j - 1] &
-               psVsh[j] <= psVsh[j - 1] &
-               psVsh[j] <= psVsh[j + 1] &
-               psTSF[j - 1] > psTSF[j - 2] &
-               psTSF[j] > psTSF[j + 1])
-           {
-
-               fosDepth[k] = psDepth[j];
-               strncpy(fosType[k], "HST/LST", 8);
-               k++;
-           }
-           else if (psTSF[j] < psTSF[j - 1] &
-                    psTSF[j - 1] < psTSF[j - 2] &
-                    psVsh[j - 1] < psVsh[j - 2] * 0.95 &
-                    psTSF[j] < psTSF[j + 1])
            {
 
                fosDepth[k] = psDepth[j];
                strncpy(fosType[k], "TST/HST", 8);
                k++;
            }
-           else if (psTSF[j] < psTSF[j - 1] &
-               psTSF[j - 1] < psTSF[j - 2] &
-               psVsh[j - 1] > psVsh[j - 2] * 0.95 &
+           else if (strncmp(fosType[k - 1], "HST/LST", 7) == 0 &
+               psTSF[j] < psTSF[j - 1] &
                psTSF[j] < psTSF[j + 1])
            {
 
                fosDepth[k] = psDepth[j];
                strncpy(fosType[k], "LST/HST", 8);
+               k++;
+           }
+
+           else if (psTSF[j] < psTSF[j - 1]     &
+               psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
+               psTSF[j] < psTSF[j + 1] * (1.0 + fosNoiseFact) &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] * (1.0 + fosNoiseFact) &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j])
+           {
+
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/HST", 8);
+               k++;
+           }
+           else if (
+               psTSF[j] < psTSF[j - 1] &
+               psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
+               psTSF[j] * (1.0 + fosNoiseFact) > psTSF[j + 1]     &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j]     &
+               psVsh[j] * (1.0 + fosNoiseFact) > psVsh[j + 1] )
+           {
+
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/TST", 8);
+               k++;
+           }
+           else if (
+               psTSF[j] < psTSF[j - 1]     &
+               psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
+               psTSF[j] * (1.0 + fosNoiseFact) > psTSF[j + 1]     &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j]     &
+               psVsh[j] <= psVsh[j + 1])
+           {
+
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/LST", 8);
                k++;
            }
 
@@ -1167,11 +1176,24 @@ void ssbMain(
    grpcnt = 1;
    for (k = numFOS - 1; k >= 0; k--, grpcnt++) {
        sprintf(fosName[k], "FOS-%d", grpcnt);
-       if (grpcnt % 2 == 0) {
-           strncpy(fosColour[k], "yellow_green", 12);
+       if (strncmp(fosType[k], "HST/HST", 7) == 0 |
+           strncmp(fosType[k], "TST/HST", 7) == 0 |
+           strncmp(fosType[k], "LST/HST", 7) == 0 )
+       {
+           strncpy(fosColour[k], "blue", 12);
+           strncpy(fosSysTract[k], "HST", 12);
        }
-       else {
-           strncpy(fosColour[k], "light_sea_green", 15);
+
+       else if (strncmp(fosType[k], "HST/TST", 7) == 0) 
+       {
+           strncpy(fosColour[k], "dark_green", 15);
+           strncpy(fosSysTract[k], "TST", 12);
+       }
+
+       else if (strncmp(fosType[k], "HST/LST", 7) == 0) 
+       {
+           strncpy(fosColour[k], "red", 15);
+           strncpy(fosSysTract[k], "LST", 12);
        }
    }
 
@@ -1186,7 +1208,7 @@ void ssbMain(
    fprintf(stderr, "number of fourth-order surfaces = %d \n", numFOS);
 
    for (k = 0; k <= numFOS; k++) {
-       fprintf(fosfile, "%f, %s, %s, %f, %f, %f, %s \n", fosDepth[k], fosName[k], fosColour[k], fosThick[k], fosVsh[k], fosTSF[k], fosType[k]);
+       fprintf(fosfile, "%f, %s, %s, %f, %f, %f, %s, %s \n", fosDepth[k], fosName[k], fosColour[k], fosThick[k], fosVsh[k], fosTSF[k], fosType[k], fosSysTract[k]);
    }
 
    fclose(fosfile);
@@ -1220,7 +1242,10 @@ void ssbMain(
            strncpy(sType[k], "BASE", 4);
            k++;
        }
-       else if (strncmp(fosType[j], "HST", 3) == 0) {
+       else if (strncmp(fosType[j], "HST/HST", 7) == 0 |
+                strncmp(fosType[j], "TST/HST", 7) == 0 |
+                strncmp(fosType[j], "LST/HST", 7) == 0
+           ) {
            sDepth[k] = fosDepth[j];
            strncpy(sType[k], "Sb?", 9);
            k++;

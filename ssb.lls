@@ -11,7 +11,9 @@ INPUT
        ECS_METHOD             ALPHA*8   /*
        SHALEBREAK_LIMIT                 /* % increase in shale break thickness for ECS definition
        PS_METHOD              ALPHA*8   /* Parasequence picking method
-       PS_INCLUDE_BACKSTEPS   INT       /* Parasequence picking method
+       PS_INCLUDE_BACKSTEPS   INTEGER   /* Parasequence picking method
+       PS_ESVSH_RATIO                   /* Minimum VSh ratio of ES units at PS boundary (0 = include all)
+       FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -45,7 +47,9 @@ OUTPUT
        ECS_METHOD             ALPHA*8   /*
        SHALEBREAK_LIMIT                 /* % increase in shale break thickness for ECS definition
        PS_METHOD              ALPHA*8   /* Parasequence picking method
-       PS_INCLUDE_BACKSTEPS   INT       /* Parasequence picking method
+       PS_INCLUDE_BACKSTEPS   INTEGER   /* Parasequence picking method
+       PS_ESVSH_RATIO                   /* Minimum VSh ratio of ES units at PS boundary (0 = include all)
+       FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -97,6 +101,8 @@ enddo
                   shalebreak_limit/100.0,
                   ps_method,
                   ps_include_backsteps,
+                  ps_esvsh_ratio,
+                  fos_noise_factor,
                   opt_element_log,
                   tvd_vshlith_min,
                   vsh_smth_arr,

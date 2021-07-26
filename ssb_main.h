@@ -14,6 +14,8 @@ extern "C" {
         double ecsShaleBreakLimit,
         char* psPickMethod,
         int psIncludeBacksteps,
+        double psEsVshRatio,
+        double fosNoiseFact,
         char* optElementLog,
         double* vshSmth,
         double* grSmth,
