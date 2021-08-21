@@ -13,7 +13,9 @@ INPUT
        PS_METHOD              ALPHA*8   /* Parasequence picking method
        PS_INCLUDE_BACKSTEPS   INTEGER   /* Parasequence picking method
        PS_ESVSH_RATIO                   /* Minimum VSh ratio of ES units at PS boundary (0 = include all)
+       PS_TSF_FACTOR                    /* Minimum % increase of TSF required for PS pick (0 = no mimum)
        FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
+       FOS_TSF_FACTOR                   /* Minimum % increase of TSF required for FOS pick (0 = no mimum)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -49,7 +51,9 @@ OUTPUT
        PS_METHOD              ALPHA*8   /* Parasequence picking method
        PS_INCLUDE_BACKSTEPS   INTEGER   /* Parasequence picking method
        PS_ESVSH_RATIO                   /* Minimum VSh ratio of ES units at PS boundary (0 = include all)
+       PS_TSF_FACTOR                    /* Minimum % increase of TSF required for PS pick (0 = no mimum)
        FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
+       FOS_TSF_FACTOR                   /* Minimum % increase of TSF required for FOS pick (0 = no mimum)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
@@ -102,7 +106,9 @@ enddo
                   ps_method,
                   ps_include_backsteps,
                   ps_esvsh_ratio,
+                  ps_tsf_factor,
                   fos_noise_factor,
+                  fos_tsf_factor,
                   opt_element_log,
                   tvd_vshlith_min,
                   vsh_smth_arr,

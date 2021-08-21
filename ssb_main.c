@@ -75,7 +75,9 @@ void ssbMain(
     char* psPickMethod,
     int psIncludeBacksteps,
     double psEsVshRatio,
+    double psTsfFactor,
     double fosNoiseFact,
+    double fosTsfFactor,
     char* optElementLog,
     double* vshSmth,
     double* grSmth,
@@ -916,7 +918,7 @@ void ssbMain(
        // PS picking criteria
        else if ((strncmp(psPickMethod, "TSF", 3) == 0 |
            strncmp(psPickMethod, "EITHER", 6) == 0) &
-           ecsTSF[j - 1] > ecsTSF[j] * 1.1 &
+           ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
            ecsESVshRatio[j] > psEsVshRatio)
        {
 
@@ -936,7 +938,7 @@ void ssbMain(
                k++;
            }
            */
-           else if (ecsTSF[j - 2] < ecsTSF[j - 1])
+           else if (ecsTSF[j - 2] * 1.1 < ecsTSF[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "TSF-TREND ", 20);
@@ -959,7 +961,7 @@ void ssbMain(
             ecsESVshRatio[j] > 1.0)
        {
            if (ecsVsh[j - 1] >= ecsVsh[j] &
-               ecsTSF[j - 2] * 1.1 < ecsTSF[j - 1])
+               ecsTSF[j - 2] < ecsTSF[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "ShBr-VSH-TREND", 15);
@@ -971,14 +973,14 @@ void ssbMain(
                strncpy(psMethod[k], "ShBr-VSH", 15);
                k++;
            }
-           else if (ecsTSF[j - 2] * 1.1 < ecsTSF[j - 1])
+           else if (ecsTSF[j - 2] < ecsTSF[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "ShBr-TREND ", 20);
                k++;
            }
        }
-       else if (ecsTSF[j - 1] > ecsTSF[j] * 1.1 &
+       else if (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
                 ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
                 ecsESsVsh[j] < ecsESsVsh[j - 1] &
                 ecsESVshRatio[j] > 1.0)
@@ -1075,14 +1077,14 @@ void ssbMain(
            k++;
        }
        else if (j == 1) {
-           if (psTSF[j] < psTSF[j - 1] &
+           if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                psTSF[j] > psTSF[j + 1])
            {
                fosDepth[k] = psDepth[j];
                strncpy(fosType[k], "HST/TST", 8);
                k++;
            }
-           else if (psTSF[j] < psTSF[j - 1] &
+           else if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                psTSF[j] < psTSF[j + 1])
            {
                fosDepth[k] = psDepth[j];
@@ -1099,17 +1101,27 @@ void ssbMain(
 
        else
        {
-           if (strncmp(fosType[k - 1], "HST/TST", 7) == 0 &
-               psTSF[j] < psTSF[j - 1] &
-               psTSF[j] < psTSF[j + 1])
+           if (strncmp(fosType[k - 1], "HST/TST", 7) == 0 )
            {
-
-               fosDepth[k] = psDepth[j];
-               strncpy(fosType[k], "TST/HST", 8);
-               k++;
+               if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
+                   psTSF[j] < psTSF[j + 1] &
+                   psVsh[j] * (1.0 + fosTsfFactor) < psVsh[j + 1])
+               {
+                   fosDepth[k] = psDepth[j];
+                   strncpy(fosType[k], "TST/HST", 8);
+                   k++;
+               }
+               else if (psTSF[j] * (1.0 + fosTsfFactor) > psTSF[j - 1] &
+                   psTSF[j] < psTSF[j + 1] &
+                   psVsh[j] * (1.0 + fosTsfFactor) < psVsh[j + 1])
+               {
+                   fosDepth[k] = psDepth[j];
+                   strncpy(fosType[k], "TST/HST", 8);
+                   k++;
+               }          
            }
            else if (strncmp(fosType[k - 1], "HST/LST", 7) == 0 &
-               psTSF[j] < psTSF[j - 1] &
+               psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                psTSF[j] < psTSF[j + 1])
            {
 
@@ -1117,8 +1129,19 @@ void ssbMain(
                strncpy(fosType[k], "LST/HST", 8);
                k++;
            }
+           else if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
+               psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
+               psTSF[j] < psTSF[j + 1] * (1.0 + fosNoiseFact) &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] * (1.0 + fosNoiseFact) &
+               psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j] &
+               psVsh[j] * (1.0 + fosNoiseFact) > psVsh[j + 1])
+           {
 
-           else if (psTSF[j] < psTSF[j - 1]     &
+               fosDepth[k] = psDepth[j];
+               strncpy(fosType[k], "HST/TST", 8);
+               k++;
+           }
+           else if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1]     &
                psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
                psTSF[j] < psTSF[j + 1] * (1.0 + fosNoiseFact) &
                psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] * (1.0 + fosNoiseFact) &
@@ -1130,12 +1153,12 @@ void ssbMain(
                k++;
            }
            else if (
-               psTSF[j] < psTSF[j - 1] &
+               psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
                psTSF[j] * (1.0 + fosNoiseFact) > psTSF[j + 1]     &
                psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] &
                psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j]     &
-               psVsh[j] * (1.0 + fosNoiseFact) > psVsh[j + 1] )
+               psVsh[j] * (1.0 + fosNoiseFact) > psVsh[j + 1])
            {
 
                fosDepth[k] = psDepth[j];
@@ -1143,7 +1166,7 @@ void ssbMain(
                k++;
            }
            else if (
-               psTSF[j] < psTSF[j - 1]     &
+               psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1]     &
                psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
                psTSF[j] * (1.0 + fosNoiseFact) > psTSF[j + 1]     &
                psVsh[j - 1] * (1.0 + fosNoiseFact) > psVsh[j - 2] &
