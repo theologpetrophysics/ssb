@@ -71,7 +71,7 @@ void ssbMain(
     char* ecsMethod,
     double ecsShaleBreakLimit,
     char* psPickMethod,
-    int psIncludeBacksteps,
+    int psIncludeTrendTest,
     double psEsVshRatio,
     double psTsfFactor,
     double fosNoiseFact,
@@ -417,10 +417,12 @@ void ssbMain(
 
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //  Logic to caluclate Element complex sets 
     //  Now need to find the shale breaks....
     //  Find when shale is thicker above than below
     //  if shale above current surface is thicker than next shale below then current surface is a shale break
     //  Zone between shale breaks is called Element Complex Set (ECS)
+
 
     // top surface is treated as top of ECS
     int numECS;
@@ -484,7 +486,7 @@ void ssbMain(
             k++;
 
         }
-        else if ((strncmp(ecsMethod, "TSF", 3) == 0 |
+        else if ((strncmp(ecsMethod, "TSF/VSH", 7) == 0 |
             strncmp(ecsMethod, "EITHER", 6) == 0) &
             esVsh[j - 1] > esVsh[j] &
             esTSF[j - 1] > esTSF[j]) {
@@ -575,6 +577,8 @@ void ssbMain(
 
     fclose(ecsfile);
 
+
+    /*
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //  Now need to find parasequence tops....
     //  Find when TSF goes up (and VSH goes up)
@@ -878,6 +882,7 @@ void ssbMain(
     }
 
     fclose(psSbfile);
+    */
 
     //-----------------------------------------------------------------------------------
     // this is the actual final PS tops picks
@@ -913,96 +918,106 @@ void ssbMain(
             k++;
 
         }
-        // PS picking criteria
+        // PS picking criteria - main criteria
         else if ((strncmp(psPickMethod, "TSF", 3) == 0 |
                   strncmp(psPickMethod, "EITHER", 6) == 0) &
                   (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) & 
-                  ecsESVshRatio[j] > psEsVshRatio) |
-                  ecsTSF[j - 1] > ecsTSF[j] * 1.5)
+                  ecsESVshRatio[j] > psEsVshRatio) &
+                  ecsVsh[j-1] > 0.15 )
+                  /* ecsTSF[j - 1] > ecsTSF[j] * 1.5)*/
 
-           /* ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
-            ecsESVshRatio[j] > psEsVshRatio) */
         { 
+            if (psIncludeTrendTest == 1) {
 
-            // this is from latest version
-            // check that VSH decrease and TSF decreases up
-            if (ecsVsh[j - 2] <= ecsVsh[j - 1] &
-                ecsTSF[j - 2] <= ecsTSF[j - 1])
-            {
+                // check that VSH decrease and TSF decreases up
+                if (ecsVsh[j - 2] <= ecsVsh[j - 1] &
+                    ecsTSF[j - 2] <= ecsTSF[j - 1])
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "TSF-VSH-TREND", 25);
+                    k++;
+                }
+
+
+                // check that TSF decreases upwards above the surface
+                else if (ecsTSF[j - 2] * 1.1 < ecsTSF[j - 1])
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "TSF-TREND ", 20);
+                    k++;
+                }
+
+                // check that VSH decreases upwards above the surface
+                else if (ecsVsh[j - 2] < ecsVsh[j - 1] &
+                    ecsTSF[j] < ecsTSF[j + 1])
+
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "VSH-TREND ", 20);
+                    k++;
+                }
+
+                /*
+                // no trend so make sure TSF increase large and
+                // TSF below increases (i.e. at base of increasing TSF?)
+                else if (ecsTSF[j - 1] > ecsTSF[j] * (1.5) &
+                    ecsTSF[j] < ecsTSF[j + 1])
+
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "NO TREND ", 20);
+                    k++;
+                }
+                */
+
+            }
+            else {
+
                 psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "TSF-VSH-TREND", 25);
+                strncpy(psMethod[k], "No trend Test - TSF/VSH ", 23);
                 k++;
+
             }
 
-            /*
-            else if (ecsVsh[j - 1] >= ecsVsh[j])
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "TSF-VSH", 15);
-                k++;
-            }
-            */
-            else if (ecsTSF[j - 2] *1.1 < ecsTSF[j - 1])
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "TSF-TREND ", 20);
-                k++;
-            }
-            // check that VSH decreases up
-            else if (ecsVsh[j - 2] < ecsVsh[j - 1] &
-                ecsTSF[j] < ecsTSF[j + 1])
 
-            /*else if (ecsVsh[j - 2] < ecsVsh[j - 1])*/
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "VSH-TREND ", 20);
-                k++;
-            }
 
-            // no trend so make sure TSF increase large
-            else if (ecsTSF[j - 1] > ecsTSF[j] * (1.5) &
-                ecsTSF[j] < ecsTSF[j + 1])
-
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "NO TREND ", 20);
-                k++;
-            }
-
-           /* else if (psIncludeBacksteps == 1 &
-                ecsTSF[j] > ecsTSF[j + 1] &
-                ecsVsh[j - 1] >= ecsVsh[j] * 0.95)
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "TSF-VSH-BACKSTEP", 20);
-                k++;
-            }*/
         }
         else if ((strncmp(psPickMethod, "SB", 2) == 0 |
             strncmp(psPickMethod, "EITHER", 6) == 0) &
             ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
             ecsESsVsh[j] < ecsESsVsh[j - 1] &
-            ecsESVshRatio[j] > 1.0)
+            ecsESVshRatio[j] > psEsVshRatio)
         {
-            if (ecsVsh[j - 1] >= ecsVsh[j] &
-                ecsTSF[j - 2] < ecsTSF[j - 1])
-            {
+
+            if (psIncludeTrendTest == 1) {
+
+                if (ecsVsh[j - 1] >= ecsVsh[j] &
+                    ecsTSF[j - 2] < ecsTSF[j - 1])
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "ShBr-VSH-TREND", 15);
+                    k++;
+                }
+                else if (ecsVsh[j - 1] >= ecsVsh[j])
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "ShBr-VSH", 15);
+                    k++;
+                }
+                else if (ecsTSF[j - 2] < ecsTSF[j - 1])
+                {
+                    psDepth[k] = ecsDepth[j];
+                    strncpy(psMethod[k], "ShBr-TREND ", 20);
+                    k++;
+                }
+            }
+            else {
+
                 psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "ShBr-VSH-TREND", 15);
+                strncpy(psMethod[k], "No trend Test - SB ", 20);
                 k++;
             }
-            else if (ecsVsh[j - 1] >= ecsVsh[j])
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "ShBr-VSH", 15);
-                k++;
-            }
-            else if (ecsTSF[j - 2] < ecsTSF[j - 1])
-            {
-                psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "ShBr-TREND ", 20);
-                k++;
-            }
+
         }
         else if (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
             ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
@@ -1127,6 +1142,7 @@ void ssbMain(
         {
             if (strncmp(fosType[k - 1], "HST/TST", 7) == 0)
             {
+                
                 if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                     psTSF[j] < psTSF[j + 1] &
                     psVsh[j] * (1.0 + fosTsfFactor) < psVsh[j + 1])
@@ -1135,6 +1151,8 @@ void ssbMain(
                     strncpy(fosType[k], "TST/HST", 8);
                     k++;
                 }
+
+
                 else if (psTSF[j] * (1.0 + fosTsfFactor) > psTSF[j - 1] &
                     psTSF[j] < psTSF[j + 1] &
                     psVsh[j] * (1.0 + fosTsfFactor) < psVsh[j + 1])
@@ -1142,8 +1160,9 @@ void ssbMain(
                     fosDepth[k] = psDepth[j];
                     strncpy(fosType[k], "TST/HST", 8);
                     k++;
-                }
+                } 
             }
+
             else if (strncmp(fosType[k - 1], "HST/LST", 7) == 0 &
                 psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                 psTSF[j] < psTSF[j + 1])
@@ -1153,6 +1172,8 @@ void ssbMain(
                 strncpy(fosType[k], "LST/HST", 8);
                 k++;
             }
+
+            /*  special case? 
             else if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                 psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
                 psTSF[j] < psTSF[j + 1] * (1.0 + fosNoiseFact) &
@@ -1164,7 +1185,8 @@ void ssbMain(
                 fosDepth[k] = psDepth[j];
                 strncpy(fosType[k], "HST/TST", 8);
                 k++;
-            }
+            } */
+
             else if (psTSF[j] * (1.0 + fosTsfFactor) < psTSF[j - 1] &
                 psTSF[j - 1] * (1.0 + fosNoiseFact) > psTSF[j - 2] &
                 psTSF[j] < psTSF[j + 1] * (1.0 + fosNoiseFact) &

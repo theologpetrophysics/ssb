@@ -13,7 +13,7 @@ extern "C" {
         char* ecsMethod,
         double ecsShaleBreakLimit,
         char* psPickMethod,
-        int psIncludeBacksteps,
+        int psIncludeTrendTest,
         double psEsVshRatio,
         double psTsfFactor,
         double fosNoiseFact,

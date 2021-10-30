@@ -939,10 +939,7 @@ void ssbMain(
            }
 
            // check that VSH decreases up
-           else if (ecsVsh[j - 2] < ecsVsh[j - 1] &
-                    ecsTSF[j] < ecsTSF[j + 1]) 
-
-           /*else if (ecsVsh[j - 2] < ecsVsh[j - 1])*/
+           else if (ecsVsh[j - 2] < ecsVsh[j - 1])
            {
                psDepth[k] = ecsDepth[j];
                strncpy(psMethod[k], "VSH-TREND ", 20);
