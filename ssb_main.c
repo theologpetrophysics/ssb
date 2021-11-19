@@ -427,6 +427,7 @@ void ssbMain(
     // top surface is treated as top of ECS
     int numECS;
     int ecsframecnt;
+    int estmpcnt;
     double ecsthicksum, ecsthickmin, ecsthickmax, ecsvshsum;
     double* ecsDepth;
     double* ecsVsh;
@@ -438,6 +439,7 @@ void ssbMain(
     double* ecsEShVsh;
     double* ecsSbRatio;
     double* ecsESVshRatio; // Ratio of Vsh of the basal ES to underlying ES for each ECS
+    double* ecsESNum; // number of ES beds per ECS
 
     allocateMemory1DD(&ecsDepth, numES, 0);
     allocateMemory1DD(&ecsVsh, numES, 0);
@@ -449,6 +451,7 @@ void ssbMain(
     allocateMemory1DD(&ecsESsVsh, numES, 0);
     allocateMemory1DD(&ecsEShVsh, numES, 0);
     allocateMemory1DD(&ecsESVshRatio, numES, 0);
+    allocateMemory1DD(&ecsESNum, numES, 0);
     char ecsName[LGROUPSIZE][10] = { {0} };
     char ecsColour[LGROUPSIZE][15] = { {0} };
 
@@ -458,9 +461,10 @@ void ssbMain(
      ecsthickmax = 0;
      ecsvshsum = 0;
    */
-
+    estmpcnt = 0;  //initialise
 
     for (j = 0; j <= numES; j++) {
+
         if (j == 0) {
             ecsDepth[k] = esDepth[j];
             k++;
@@ -470,6 +474,8 @@ void ssbMain(
         else if (j == numES) {
             ecsDepth[k] = esDepth[j];
             //fprintf(stderr, "Base at  = %f \n ", ecsDepth[k]);
+            ecsESNum[k-1] = estmpcnt;
+            estmpcnt = 0;
             k++;
 
         }
@@ -483,6 +489,8 @@ void ssbMain(
             // calculate shale break thickness change ratio for calibration
             ecsSbRatio[k] = esShaleThick[j - 1] / esShaleThick[j];
             ecsESVshRatio[k] = esVsh[j - 1] / esVsh[j];
+            ecsESNum[k-1] = estmpcnt;
+            estmpcnt = 0;
             k++;
 
         }
@@ -497,8 +505,12 @@ void ssbMain(
             // calculate shale break thickness change ratio for calibration
             ecsSbRatio[k] = esShaleThick[j - 1] / esShaleThick[j];
             ecsESVshRatio[k] = esVsh[j - 1] / esVsh[j];
+            ecsESNum[k-1] = estmpcnt;
+            estmpcnt = 0;
             k++;
         }
+
+        estmpcnt++;  // increment the ES counter
     }
 
 
@@ -571,8 +583,8 @@ void ssbMain(
     fprintf(stderr, "number of Element Complex Sets = %d \n", numECS);
 
     for (k = 0; k <= numECS; k++) {
-        fprintf(ecsfile, "%f, %s, %s, %f, %f, %f, %f, %f, %f, %f, %f \n", ecsDepth[k], ecsName[k], ecsColour[k],
-            ecsThick[k], ecsVsh[k], ecsTSF[k], ecsSbThick[k], ecsSbRatio[k], ecsSsThick[k], ecsESsVsh[k], ecsEShVsh[k]);
+        fprintf(ecsfile, "%f, %s, %s, %f, %f, %f, %f, %f, %f, %f, %f, %f \n", ecsDepth[k], ecsName[k], ecsColour[k],
+            ecsThick[k], ecsVsh[k], ecsTSF[k], ecsSbThick[k], ecsSbRatio[k], ecsSsThick[k], ecsESsVsh[k], ecsEShVsh[k], ecsESNum[k]);
     }
 
     fclose(ecsfile);
@@ -888,21 +900,27 @@ void ssbMain(
     // this is the actual final PS tops picks
     int numPS;
     int psframecnt;
+    int psecscnt;
     double psthicksum, psthickmin, psthickmax, psvshsum;
     double* psDepth;
     double* psVsh;
     double* psThick;
     double* psTSF;
+    double* psECSNum;
+
     allocateMemory1DD(&psDepth, numECS, 0);
     allocateMemory1DD(&psVsh, numECS, 0);
     allocateMemory1DD(&psThick, numECS, 0);
     allocateMemory1DD(&psTSF, numECS, 0);
+    allocateMemory1DD(&psECSNum, numECS, 0);
     char psName[LGROUPSIZE][10] = { {0} };
 
     char psColour[LGROUPSIZE][20] = { {0} };
     char psMethod[LGROUPSIZE][30] = { {0} };
 
     k = 0;
+    psecscnt = 0;
+
     for (j = 0; j <= numECS; j++) {
         if (j == 0) {
             psDepth[k] = ecsDepth[j];
@@ -914,19 +932,23 @@ void ssbMain(
         else if (j == numECS) {
             psDepth[k] = ecsDepth[j];
             strncpy(psMethod[k], "Base", 15);
+            psECSNum[k - 1] = psecscnt;
+            psecscnt = 0;
             //fprintf(stderr, "Base at  = %f \n ", ecsDepth[k]);
             k++;
 
         }
         // PS picking criteria - main criteria
         else if ((strncmp(psPickMethod, "TSF", 3) == 0 |
-                  strncmp(psPickMethod, "EITHER", 6) == 0) &
-                  (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) & 
-                  ecsESVshRatio[j] > psEsVshRatio) &
-                  ecsVsh[j-1] > 0.15 )
+            strncmp(psPickMethod, "EITHER", 6) == 0) &
+            (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
+                ecsESVshRatio[j] > psEsVshRatio) &
+                ecsVsh[j - 1] > 0.15 & 
+                psecscnt * ecsESNum[j - 1] > 1.0 )
                   /* ecsTSF[j - 1] > ecsTSF[j] * 1.5)*/
 
-        { 
+        {
+
             if (psIncludeTrendTest == 1) {
 
                 // check that VSH decrease and TSF decreases up
@@ -975,18 +997,19 @@ void ssbMain(
 
                 psDepth[k] = ecsDepth[j];
                 strncpy(psMethod[k], "No trend Test - TSF/VSH ", 23);
+                psECSNum[k - 1] = psecscnt;
+                psecscnt = 0;
                 k++;
 
             }
-
-
 
         }
         else if ((strncmp(psPickMethod, "SB", 2) == 0 |
             strncmp(psPickMethod, "EITHER", 6) == 0) &
             ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
-            ecsESsVsh[j] < ecsESsVsh[j - 1] &
-            ecsESVshRatio[j] > psEsVshRatio)
+            ecsVsh[j - 1] > 0.15 &
+            ecsESVshRatio[j] > psEsVshRatio &
+            psecscnt * ecsESNum[j - 1] > 1.0)
         {
 
             if (psIncludeTrendTest == 1) {
@@ -1014,21 +1037,25 @@ void ssbMain(
             else {
 
                 psDepth[k] = ecsDepth[j];
-                strncpy(psMethod[k], "No trend Test - SB ", 20);
+                strncpy(psMethod[k], "No trend Test - SB/VSH ", 23);
+                psECSNum[k - 1] = psecscnt;
+                psecscnt = 0;
                 k++;
             }
 
-        }
+        }/*
         else if (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
             ecsSbThick[j] > ecsSbThick[j + 1] * 1.25 &
             ecsESsVsh[j] < ecsESsVsh[j - 1] &
-            ecsESVshRatio[j] > 1.0)
+            ecsESVshRatio[j] > 1.0 &
+            psecscnt * ecsESNum[j - 1] > 1.0)
         {
             psDepth[k] = ecsDepth[j];
             strncpy(psMethod[k], "TSF-ShBr", 15);
             k++;
-        }
+        } */
 
+        psecscnt++;
     }
 
     numPS = k - 1;
@@ -1067,7 +1094,7 @@ void ssbMain(
     fprintf(stderr, "number of Para-sequences = %d \n", numPS);
 
     for (k = 0; k <= numPS; k++) {
-        fprintf(psfile, "%f, %s, %s, %f, %f, %f, %s \n", psDepth[k], psName[k], psColour[k], psThick[k], psVsh[k], psTSF[k], psMethod[k]);
+        fprintf(psfile, "%f, %s, %s, %f, %f, %f, %s, %f \n", psDepth[k], psName[k], psColour[k], psThick[k], psVsh[k], psTSF[k], psMethod[k], psECSNum[k]);
     }
 
     fclose(psfile);
