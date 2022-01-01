@@ -943,7 +943,7 @@ void ssbMain(
             strncmp(psPickMethod, "EITHER", 6) == 0) &
             (ecsTSF[j - 1] > ecsTSF[j] * (1.0 + psTsfFactor) &
                 ecsESVshRatio[j] > psEsVshRatio) &
-                ecsVsh[j - 1] > 0.15 & 
+                ecsVsh[j - 1] > 0.31 & 
                 psecscnt * ecsESNum[j - 1] > 1.0 )
                   /* ecsTSF[j - 1] > ecsTSF[j] * 1.5)*/
 
@@ -1135,7 +1135,7 @@ void ssbMain(
 
     for (j = 0; j <= numPS; j++) {
         // fprintf(stderr, "PS number = %d \n", j);
-
+        //Deal with top and basal ECS units
         if (j == 0)
         {
             fosDepth[k] = psDepth[j];
@@ -1165,6 +1165,7 @@ void ssbMain(
             strncpy(fosType[k], "BASE", 4);
         }
 
+        // all other ECS units in between
         else
         {
             if (strncmp(fosType[k - 1], "HST/TST", 7) == 0)
