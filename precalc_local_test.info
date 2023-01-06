@@ -1,0 +1,83 @@
+# spec : Pre-calculation for petrophysics analysis
+LICENCE = DETERMIN
+LAYOUT = precomp
+NAME = precalc_local_test
+PREFIX = precalc_local_test
+INIT = precalc_local_test_init
+EXEC = precalc_local_test_exe
+TERM = precalc_local_test_term
+DESCRIPTION_DETAIL = "\
+\
+PRECALC performs the following precalculations\:\
+\
+1) Salinity of mud and mud filtrate from sample resistivities. Note that for Oil Based Mud, mud, mud filtrate and mudcake resistivity properties are not used and corresponding resistivity profiles and salinities are not computed.\
+  Note that for salinity and Rw calculations there are two options, use Bateman konen at lower salinities higher resistivities and switch at a salinity of 39161 or resistivity of 0.162206339, at higher salinities , lower resistivites use the Kennedy equation.\
+  For the Kennedy method, the maximum allowable salinity is 275,000 ppm and minimum resistivity at 75F is 0.412 ohmm.\
+\
+2) Formation pressure and temperature curves. If OPT_REF \= TVD and there is a TVD in the reference set it will be used for calculation of FTEMP (except for option \"SONDE\") and FPRESS. FTEMP can be calculated with different gradients on an interval basis. If it is desired to do this, then\
+   for this option 2 temperatures are required one at the top logged interval (TLI) and one at the bottom logged interval (BLI)\
+   if option GRADIENT is selected than a temperature and depth are required at the top of the hole and then a gradient\
+   if option GRAD/BLT is selected - this requires a gradient and a bottom hole temperature as input\
+   In deviated wells, True vertical depth is required instead of measured depth\
+\
+3) Mud, mud filtrate, mud cake resistivity curves from sample resistivities.\
+\
+4) Mud cake thicknesses for both porosity and resistivity tools. The backup arm of the density tool is assumed to cut through the mudcake. Consequently, the mudcake thickness is just the difference between BS and caliper. For resistivity tools, the user has the options SRT and MPT. The first calculates mudcake as the difference between BS and mudcake while the second calculates half this difference.\
+\
+5) U, the photo-electric cross-section, from the product of RHOE and PEF, the photo-electric factor. RHOE (electronic density) is calculated from the bulk density via the following equation\:\
+\
+         RHOE \= ( RHO + 0.1883 ) / 1.0704\
+\
+6) Ct the unflushed zone conductivity from the reciprocal of Rt\
+\
+7) Cxo the flushed zone conductivity from the reciprocal of Rxo\
+\
+"
+DESCRIPTION = "Pre-calculation for petrophysics analysis"
+MODE:  ARG:        VAR:        TYPE:         REPEAT: DEFAULT:      VALIDATION:                     LOCATION: UNIT:    VISIBLE:                                                                                     TAB_LABEL: COMMENT=
+#====  ====        ====        =====         ======= ========      ===========                     ========= =====    ========                                                                                     ========== ========                                                          
+INPUT  FILE_IN     file_in     FILE          ""      ""            ""                              ""        ""       TRUE                                                                                         ""         "Input table (pipe)."
+INPUT  FILE_OUT    file_out    FILE          ""      ""            ""                              ""        ""       TRUE                                                                                         ""         "Output table (pipe)."
+IN_OUT OPT_FT      opt_ft      NAME_ALPHA*8  ""      TLI/BLI       TLI/BLI,GRADIENT,GRAD/BLT,SONDE INTERVAL  ALPHA*8  TRUE                                                                                         ""         "Option for formation temperature"
+IN_OUT OPT_REF     opt_ref     NAME_ALPHA*8  ""      DEPTH         DEPTH,TVD                       INTERVAL  ALPHA*8  TRUE                                                                                         ""         "Option for reference"
+IN_OUT OPT_HMC_RES opt_hmc_res NAME_ALPHA*8  ""      SRT           SRT,MPT                         INTERVAL  ALPHA*8  TRUE                                                                                         ""         "Option for resistivity mudcake calc"
+IN_OUT OPT_SAL     opt_sal     NAME_ALPHA*16 ""      BATEMAN_KONEN BATEMAN_KONEN,KENNEDY_MOD       INTERVAL  ALPHA*16 TRUE                                                                                         ""         "Option for salinity calculation"
+IN_OUT TLT         tlt         NAME_REAL     ""      TLT           -50\:400                        INTERVAL  degc     "OPT_FT\=\='TLI/BLI' | OPT_FT\=\='GRADIENT'"                                                 ""         "Top log interval temperature"
+IN_OUT TLI         tli         NAME_REAL     ""      0             0\:15000                        INTERVAL  m        "OPT_REF\=\='DEPTH' & ( OPT_FT\=\='TLI/BLI' | OPT_FT\=\='GRADIENT' | OPT_FT\=\='GRAD/BLT' )" ""         "Top log interval (MD)"
+IN_OUT TLI_TVD     tli_tvd     NAME_REAL     ""      TLI_TVD       0\:15000                        INTERVAL  m        "OPT_REF\=\='TVD' & ( OPT_FT\=\='TLI/BLI' | OPT_FT\=\='GRADIENT'  | OPT_FT\=\='GRAD/BLT' )"  ""         "Top log interval (TVD)"
+IN_OUT BLT         blt         NAME_REAL     ""      BLT           0\:400                          INTERVAL  degc     "OPT_FT\=\='TLI/BLI'  | OPT_FT\=\='GRAD/BLT'"                                                ""         "Bottom log interval temperature"
+IN_OUT BLI         bli         NAME_REAL     ""      BLI           0\:15000                        INTERVAL  m        "OPT_REF\=\='DEPTH' & ( OPT_FT\=\='TLI/BLI' | OPT_FT\=\='GRADIENT' | OPT_FT\=\='GRAD/BLT' )" ""         "Bottom log interval (MD)"
+IN_OUT BLI_TVD     bli_tvd     NAME_REAL     ""      BLI_TVD       0\:15000                        INTERVAL  m        "OPT_REF\=\='TVD' & OPT_FT\=\='TLI/BLI' |OPT_REF\=\='TVD' & OPT_FT\=\='GRAD/BLT'"            ""         "Bottom log interval (TVD)"
+IN_OUT FTGRAD      ftgrad      NAME_REAL     ""      0.03          0.01\:0.1                       INTERVAL  dc/m     "OPT_FT\=\='GRADIENT' | OPT_FT\=\='GRAD/BLT'"                                                ""         "Formation temperature gradient, degrees per 100 units of length"
+IN_OUT OPT_FP      opt_fp      NAME_ALPHA*8  ""      MUD_DENS      MUD_DENS,GRADIENT               INTERVAL  ALPHA*8  TRUE                                                                                         ""         "Option for form'n/hydro pressure"
+IN_OUT MUDBASE     mudbase     NAME_ALPHA*8  ""      WATER         WATER,OIL                       INTERVAL  ALPHA*8  TRUE                                                                                         ""         "Base of drilling mud"
+IN_OUT DFD         dfd         NAME_REAL     ""      DFD           0.0\:2400                       INTERVAL  k/m3     "OPT_FP\=\='MUD_DENS'"                                                                       ""         "Drilling fluid density"
+IN_OUT FPGRAD      fpgrad      NAME_REAL     ""      9.80665       5\:30                           INTERVAL  kp/m     OPT_FP\:GRADIENT                                                                             ""         "Form'n/hydro pressure gradient"
+IN_OUT RMS         rms         NAME_REAL     ""      RMS           0.01\:,-                        INTERVAL  ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Resistivity of mud sample"
+IN_OUT MST         mst         NAME_REAL     ""      MST           0\:200,-                        INTERVAL  degc     "MUDBASE\=\='WATER'"                                                                         ""         "Mud sample temperature"
+IN_OUT RMFS        rmfs        NAME_REAL     ""      RMFS          0.01\:,-                        INTERVAL  ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Resistivity of filtrate sample"
+IN_OUT MFST        mfst        NAME_REAL     ""      MFST          0\:200,-                        INTERVAL  degc     "MUDBASE\=\='WATER'"                                                                         ""         "Mud filtrate sample temperature"
+IN_OUT RMCS        rmcs        NAME_REAL     ""      RMCS          0.01\:,-                        INTERVAL  ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Resistivity of mudcake sample"
+IN_OUT MCST        mcst        NAME_REAL     ""      MCST          0\:200,-                        INTERVAL  degc     "MUDBASE\=\='WATER'"                                                                         ""         "Mudcake sample temperature"
+IN_OUT BS          bs          NAME_REAL     ""      BS            95\:750                         INTERVAL  mm       TRUE                                                                                         ""         "Drilling bit size"
+INPUT  DEPTH       depth       NAME_REAL     ""      DEPTH         0\:15000                        LOG       m        TRUE                                                                                         ""         Depth
+INPUT  TVD         tvd         NAME_REAL     ""      TVD           0\:15000,-                      LOG       m        OPT_REF\:TVD                                                                                 ""         "True vertical depth"
+INPUT  MTEM        mtem        NAME_REAL     ""      MTEM          0\:200,-                        LOG       degc     OPT_FT\:SONDE                                                                                ""         "Mud temperature from sonde"
+INPUT  CALI_POR    cali_por    NAME_REAL     ""      CALI_POR      0\:750,-                        LOG       mm       TRUE                                                                                         ""         "Caliper from nuclear/porosity"
+INPUT  CALI_RES    cali_res    NAME_REAL     ""      CALI_RES      0\:750,-                        LOG       mm       TRUE                                                                                         ""         "Caliper from resistivity/sonic"
+INPUT  RHO         rho         NAME_REAL     ""      RHO_COR       -200\:5000,-                    LOG       k/m3     TRUE                                                                                         ""         "Density log"
+INPUT  PEF         pef         NAME_REAL     ""      PEF           0\:500,-                        LOG       b/e      TRUE                                                                                         ""         "Photo-electric factor"
+INPUT  RT          rt          NAME_REAL     ""      RT            0.01\:100000,-                  LOG       ohmm     TRUE                                                                                         ""         "True formation resistivity"
+INPUT  RXO         rxo         NAME_REAL     ""      RXO           0.01\:100000,-                  LOG       ohmm     TRUE                                                                                         ""         "Flushed zone resistivity"
+OUTPUT SALM        salm        NAME_REAL     ""      SALM          ""                              INTERVAL  ppm      "RMS<>MISSING & MST <> MISSING"                                                              ""         "Salinity of mud"
+OUTPUT SALMF       salmf       NAME_REAL     ""      SALMF         ""                              INTERVAL  ppm      "RMFS <> MISSING & MFST <> MISSING"                                                          ""         "Salinity of mud filtrate"
+OUTPUT FTEMP       ftemp       NAME_REAL     ""      FTEMP         ""                              LOG       degc     TRUE                                                                                         ""         "Formation temperature"
+OUTPUT FPRESS      fpress      NAME_REAL     ""      FPRESS        ""                              LOG       kpa      TRUE                                                                                         ""         "Formation/hydrostatic pressure"
+OUTPUT RM          rm          NAME_REAL     ""      RM            ""                              LOG       ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Mud resistivity"
+OUTPUT RMF         rmf         NAME_REAL     ""      RMF           ""                              LOG       ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Mud filtrate resistivity"
+OUTPUT RMC         rmc         NAME_REAL     ""      RMC           ""                              LOG       ohmm     "MUDBASE\=\='WATER'"                                                                         ""         "Mudcake resistivity"
+OUTPUT HMC_POR     hmc_por     NAME_REAL     ""      HMC_POR       ""                              LOG       mm       TRUE                                                                                         ""         "Mudcake from nuclear/porosity"
+OUTPUT HMC_RES     hmc_res     NAME_REAL     ""      HMC_RES       ""                              LOG       mm       TRUE                                                                                         ""         "Mudcake from resistivity/sonic"
+OUTPUT U           u           NAME_REAL     ""      U             ""                              LOG       b/c3     "RHO<>MISSING & PEF<>MISSING"                                                                ""         "Photo-electric cross-section"
+OUTPUT CT          ct          NAME_REAL     ""      CT            ""                              LOG       mh/m     RT<>MISSING                                                                                  ""         "True formation conductivity"
+OUTPUT CXO         cxo         NAME_REAL     ""      CXO           ""                              LOG       mh/m     RXO<>MISSING                                                                                 ""         "Flushed zone conductivity"

@@ -17,6 +17,7 @@ INPUT
        FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
        FOS_TSF_FACTOR                   /* Minimum % increase of TSF required for FOS pick (0 = no mimum)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
+       OPT_COAL_PS            INTEGER   /* Option to force PS at top of coals
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
@@ -26,6 +27,7 @@ INPUT
        TVD                    METRES    /* Downhole depth
        GR                     GAPI      /* Gamma Ray Log
        VSH                    V/V       /* Volume of Shale
+       COAL                             /* Coal flag
 
 LOCAL
        count                            /*
@@ -35,6 +37,7 @@ LOCAL
        tvd_arr[20000]                   /*
        gr_arr[20000]                    /*
        vsh_arr[20000]                   /*
+       coal_arr[20000]                  /*
        vsh_smth_arr[20000]              /*
        gr_smth_arr[20000]               /*
        vsh_lith_group_arr[20000]           /*
@@ -55,6 +58,7 @@ OUTPUT
        FOS_NOISE_FACTOR                 /* Amount of "Noise" allowed within trends (enter fraction (0-1)
        FOS_TSF_FACTOR                   /* Minimum % increase of TSF required for FOS pick (0 = no mimum)
        OPT_ELEMENT_LOG        ALPHA*8   /* Choose which log is ued to define element boundaries
+       OPT_COAL_PS            INTEGER   /* Option to force PS at top of coals
        DEPTH_WINDOW           M         /* depth window for averaging VSH lithogroups
        TVD_VSHLITH_MIN        M         /* minimum thickness for VSH lithology groups
                                         /*
@@ -79,7 +83,8 @@ dowhile GET_FRAME ()
   depth_arr[cnt] = depth;
   tvd_arr[cnt] = tvd;
   gr_arr[cnt] = gr;
-  vsh_arr[cnt] = vsh ;
+  vsh_arr[cnt] = vsh;
+  coal_arr[cnt] = coal;
   cnt++;
 .cc_end
   
@@ -100,6 +105,8 @@ enddo
                   tvd_arr, 
                   gr_arr, 
                   vsh_arr,
+                  coal_arr,
+                  opt_coal_ps,
                   lithgroup_method,
                   ecs_method,
                   shalebreak_limit/100.0,

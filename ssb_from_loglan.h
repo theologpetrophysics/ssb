@@ -10,6 +10,8 @@ extern "C" {
         double* tvdLog,
         double* grLog,
         double* vshLog,
+        double* coalLog,
+        int optCoalForce,
         char* lithgroupMethod,
         char* ecsMethod,
         double ecsShaleBreakLimit,

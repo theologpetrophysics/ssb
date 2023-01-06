@@ -1,0 +1,287 @@
+PROGRAM: PRECALC_LOCAL_TEST  Pre-calculation for petrophysics analysis
+
+/*
+/*History:   May 1995 (SGC/WWC) Initial coding for Geolog6
+/*           Nov 1996 (WWC)     Add Ct and Cxo calculation
+/*           Jan 1997 (WWC)     Convert bulk density to electronic
+/*                              density for U calculation.
+/*           Feb 1997 (WWC)     Allow missings on mud props (for OBM)
+/*                              Include precalc layout callup
+/*           Mar 1997 (WWC)     Correct rhoe for metric units
+/*           Jun 1997 (WWC)     TVD can be used for FTEMP & FPRESS
+/*           Nov 1997 (WWC)     Allow interval variation of FTEMP -
+/*                              change TD to BLI, BHT to BLT, SHT to TLT
+/*                              and introduce TLI. Change option SHT/BHT
+/*                              to TLI/BLI.
+/*           Jan 1998 (WWC)     Correct FTEMP equation for TLI/BLI
+/*           Mar 1998 (WWC)     Correct FTEMP equation for 'GRADIENT'
+/*           Oct 2001 (WWC)     Add BLI_TVD & TLI_TVD and logic for same
+/*           Feb 2003 (WWC)     Add option to double mudcake thickness
+/*           Feb 2004 (WWC)     Correct validation for RT & RXO
+/*           Aug 2004 (WWC)     Update visibilities
+/*           Mar 2008 (WWC)     Change upper depth validations from 10,000m
+/*                              to 15,000
+/*           Jul 2012 (WWC)     Change upper validation for MST, MFST &
+/*                              MCST to 200C for Russian intervals
+/*           Jul 2012 (WWC)     Add "MUDBASE" to allow visiblity control
+/*                              on mud resistivity properties
+/*           Sep 2015 (TOS)     Add FTEMP option of GRAD and Bottom Log Temperature
+/*           Nov 2015 (TOS)     Add Salinity Calculation option, Bateman_konen or Kennedy_modification
+/*
+/*           Copyright 1995-2019 Emerson Paradigm Holding LLC. All rights reserved.
+/*
+/*--------------------------------------------------------------------------
+/*start_doc
+/*
+/*PRECALC performs the following precalculations:
+/*
+/*1) Salinity of mud and mud filtrate from sample resistivities. Note that for Oil Based Mud, mud, mud filtrate and mudcake resistivity properties are not used and corresponding resistivity profiles and salinities are not computed.
+/*  Note that for salinity and Rw calculations there are two options, use Bateman konen at lower salinities higher resistivities and switch at a salinity of 39161 or resistivity of 0.162206339, at higher salinities , lower resistivites use the Kennedy equation.
+/*  For the Kennedy method, the maximum allowable salinity is 275,000 ppm and minimum resistivity at 75F is 0.412 ohmm.
+/*
+/*2) Formation pressure and temperature curves. If OPT_REF = TVD and there is a TVD in the reference set it will be used for calculation of FTEMP (except for option "SONDE") and FPRESS. FTEMP can be calculated with different gradients on an interval basis. If it is desired to do this, then
+/*   for this option 2 temperatures are required one at the top logged interval (TLI) and one at the bottom logged interval (BLI)
+/*   if option GRADIENT is selected than a temperature and depth are required at the top of the hole and then a gradient
+/*   if option GRAD/BLT is selected - this requires a gradient and a bottom hole temperature as input
+/*   In deviated wells, True vertical depth is required instead of measured depth
+/*
+/*3) Mud, mud filtrate, mud cake resistivity curves from sample resistivities.
+/*
+/*4) Mud cake thicknesses for both porosity and resistivity tools. The backup arm of the density tool is assumed to cut through the mudcake. Consequently, the mudcake thickness is just the difference between BS and caliper. For resistivity tools, the user has the options SRT and MPT. The first calculates mudcake as the difference between BS and mudcake while the second calculates half this difference.
+/*
+/*5) U, the photo-electric cross-section, from the product of RHOE and PEF, the photo-electric factor. RHOE (electronic density) is calculated from the bulk density via the following equation:
+/*
+/*         RHOE = ( RHO + 0.1883 ) / 1.0704
+/*
+/*6) Ct the unflushed zone conductivity from the reciprocal of Rt
+/*
+/*7) Cxo the flushed zone conductivity from the reciprocal of Rxo
+/*
+/*end_doc
+
+INPUT
+                                        /*
+                                        /* INTERVALS ----------------------
+                                        /*
+       OPT_FT                 ALPHA*8   /* Option for formation temperature
+       OPT_REF                ALPHA*8   /* Option for reference
+       OPT_HMC_RES            ALPHA*8   /* Option for resistivity mudcake calc
+       OPT_SAL                ALPHA*16  /* Option for salinity calculation
+       TLT                    degc      /* Top log interval temperature
+       TLI                    m         /* Top log interval (MD)
+       TLI_TVD                m         /* Top log interval (TVD)
+       BLT                    degc      /* Bottom log interval temperature
+       BLI                    m         /* Bottom log interval (MD)
+       BLI_TVD                m         /* Bottom log interval (TVD)
+       FTGRAD                 dc/m      /* Formation temperature gradient, degrees per 100 units of length
+       OPT_FP                 ALPHA*8   /* Option for form'n/hydro pressure
+       MUDBASE                ALPHA*8   /* Base of drilling mud
+       DFD                    k/m3      /* Drilling fluid density
+       FPGRAD                 kp/m      /* Form'n/hydro pressure gradient
+       RMS                    ohmm      /* Resistivity of mud sample
+       MST                    degc      /* Mud sample temperature
+       RMFS                   ohmm      /* Resistivity of filtrate sample
+       MFST                   degc      /* Mud filtrate sample temperature
+       RMCS                   ohmm      /* Resistivity of mudcake sample
+       MCST                   degc      /* Mudcake sample temperature
+       BS                     mm        /* Drilling bit size
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       DEPTH                  m         /* Depth
+       TVD                    m         /* True vertical depth
+       MTEM                   degc      /* Mud temperature from sonde
+       CALI_POR               mm        /* Caliper from nuclear/porosity
+       CALI_RES               mm        /* Caliper from resistivity/sonic
+       RHO                    k/m3      /* Density log
+       PEF                    b/e       /* Photo-electric factor
+       RT                     ohmm      /* True formation resistivity
+       RXO                    ohmm      /* Flushed zone resistivity
+
+LOCAL
+       xm                               /* Temporary constants
+       xmf                              /* Temporary constants
+       rm75                             /* Temporary resistivities
+       rmf75                            /* Temporary resistivities
+       rhoe                             /* Electronic density
+
+OUTPUT
+                                        /*
+                                        /* INTERVALS ----------------------
+                                        /*
+       OPT_FT                 ALPHA*8   /* Option for formation temperature
+       OPT_REF                ALPHA*8   /* Option for reference
+       OPT_HMC_RES            ALPHA*8   /* Option for resistivity mudcake calc
+       OPT_SAL                ALPHA*16  /* Option for salinity calculation
+       TLT                    degc      /* Top log interval temperature
+       TLI                    m         /* Top log interval (MD)
+       TLI_TVD                m         /* Top log interval (TVD)
+       BLT                    degc      /* Bottom log interval temperature
+       BLI                    m         /* Bottom log interval (MD)
+       BLI_TVD                m         /* Bottom log interval (TVD)
+       FTGRAD                 dc/m      /* Formation temperature gradient, degrees per 100 units of length
+       OPT_FP                 ALPHA*8   /* Option for form'n/hydro pressure
+       MUDBASE                ALPHA*8   /* Base of drilling mud
+       DFD                    k/m3      /* Drilling fluid density
+       FPGRAD                 kp/m      /* Form'n/hydro pressure gradient
+       RMS                    ohmm      /* Resistivity of mud sample
+       MST                    degc      /* Mud sample temperature
+       RMFS                   ohmm      /* Resistivity of filtrate sample
+       MFST                   degc      /* Mud filtrate sample temperature
+       RMCS                   ohmm      /* Resistivity of mudcake sample
+       MCST                   degc      /* Mudcake sample temperature
+       BS                     mm        /* Drilling bit size
+       SALM                   ppm       /* Salinity of mud
+       SALMF                  ppm       /* Salinity of mud filtrate
+                                        /*
+                                        /* LOGS ---------------------------
+                                        /*
+       FTEMP                  degc      /* Formation temperature
+       FPRESS                 kpa       /* Formation/hydrostatic pressure
+       RM                     ohmm      /* Mud resistivity
+       RMF                    ohmm      /* Mud filtrate resistivity
+       RMC                    ohmm      /* Mudcake resistivity
+       HMC_POR                mm        /* Mudcake from nuclear/porosity
+       HMC_RES                mm        /* Mudcake from resistivity/sonic
+       U                      b/c3      /* Photo-electric cross-section
+       CT                     mh/m      /* True formation conductivity
+       CXO                    mh/m      /* Flushed zone conductivity
+
+START:
+
+dowhile GET_FRAME ()
+
+  /* Mud salinity
+  rm75 = RMS * ( MST + 21.5 ) / ( 23.9 + 21.5 )
+  if ( OPT_SAL == 'KENNEDY_MOD' & rm75 < 0.162206339 ) then
+          if (rm75 > .0412) then
+    SALM =((0.0364+(0.0364**2 - 4*(-0.02992)*(24.30853-1/rm75))**0.5)/(2*(-0.02922))+29.46518957)*10000 + ~
+         (((((3848.41932079068 + ~
+         (-324.334159371656 / rm75)) + ~
+         (53.5094510929103 / (rm75**2))) + ~
+         (-5.21163543116257 / (rm75**3))) + ~
+         (0.228141574550587 / (rm75**4))) + ~
+         (-0.00378506218904961 / (rm75**5)))
+         else
+              SALM = 275000
+/*           DISPLAY_MESSAGE ( ' For Kennedy method minimum resistivity at 75C is 0.0412 ohmm and maximum salinity is 275,000ppm' )
+         endif
+  else
+    xm   = ( 3.562 - log10( rm75 - 0.0123 ) ) / 0.955
+    SALM = 10**xm
+  endif
+
+  /* Mud filtrate salinity
+  rmf75 = RMFS * ( MFST + 21.5 ) / ( 23.9 + 21.5 )
+  if ( OPT_SAL == 'KENNEDY_MOD' & rmf75 < 0.162206339 ) then
+          if (rmf75 > .0412) then
+    SALMF =((0.0364+(0.0364**2 - 4*(-0.02992)*(24.30853-1/rmf75))**0.5)/(2*(-0.02922))+29.46518957)*10000 + ~
+         (((((3848.41932079068 + ~
+         (-324.334159371656 / rmf75)) + ~
+         (53.5094510929103 / (rmf75**2))) + ~
+         (-5.21163543116257 / (rmf75**3))) + ~
+         (0.228141574550587 / (rmf75**4))) + ~
+         (-0.00378506218904961 / (rmf75**5)))
+         else
+             SALMF = 275000
+ /*             DISPLAY_MESSAGE ( ' For Kennedy method minimum resistivity at 75C is 0.0412 ohmm and maximum salinity is 275,000ppm' )
+         endif
+  else
+    xmf   = ( 3.562 - log10( rmf75 - 0.0123 ) ) / 0.955
+    SALMF = 10**xmf
+  endif
+
+  /* Formation temperature
+  if ( OPT_FT == 'SONDE' ) then
+      FTEMP = MTEM
+  elseif ( OPT_REF == 'TVD' ) then
+    if ( TVD <> MISSING ) then
+      if ( OPT_FT == 'TLI/BLI' ) then
+        FTEMP = TLT + ( BLT - TLT ) * ( TVD - TLI_TVD ) / ( BLI_TVD - TLI_TVD )
+      elseif ( OPT_FT == 'GRADIENT' ) then
+        FTEMP = TLT + ( ( TVD - TLI_TVD ) * FTGRAD )
+      elseif ( OPT_FT == 'GRAD/BLT' ) then
+        FTEMP = BLT - ( ( BLI_TVD - TVD ) * FTGRAD )
+      endif
+    else
+      FTEMP = missing
+      DISPLAY_MESSAGE ( 'precalc: TVD reference missing' )
+    endif
+  else
+    if ( OPT_FT == 'TLI/BLI' ) then
+      FTEMP = TLT + ( BLT - TLT ) * ( DEPTH - TLI ) / ( BLI - TLI )
+    elseif ( OPT_FT == 'GRADIENT' ) then
+      FTEMP = TLT + ( ( DEPTH - TLI ) * FTGRAD )
+    elseif ( OPT_FT == 'GRAD/BLT' ) then
+      FTEMP = BLT - ( ( BLI - DEPTH ) * FTGRAD )
+    endif
+  endif
+
+  /* Formation pressure
+  if ( OPT_REF == 'TVD' ) then
+    if ( TVD <> MISSING ) then
+      if ( OPT_FP == 'MUD_DENS' ) then
+        FPRESS = TVD * DFD * 0.00980665
+      elseif ( OPT_FP == 'GRADIENT' ) then
+        FPRESS = TVD * FPGRAD
+      endif
+    else
+      FPRESS = missing
+      DISPLAY_MESSAGE ( 'precalc: TVD reference missing' )
+    endif
+  else
+    if ( OPT_FP == 'MUD_DENS' ) then
+      FPRESS = DEPTH * DFD * 0.00980665
+    elseif ( OPT_FP == 'GRADIENT' ) then
+      FPRESS = DEPTH * FPGRAD
+    endif
+  endif
+
+  /* Mud resistivity
+  RM = RMS * ( MST + 21.5 ) / ( FTEMP + 21.5 )
+
+  /* Mud cake resistivity
+  RMC = RMCS * ( MCST + 21.5 ) / ( FTEMP + 21.5 )
+
+  /* Mud filtrate resistivity
+  RMF = RMFS * ( MFST + 21.5 ) / ( FTEMP + 21.5 )
+
+  /* Mud cake for porosity devices
+  HMC_POR = BS - CALI_POR
+  HMC_POR = LIMIT ( HMC_POR, 0, MISSING )
+
+  /* Mud cake for resistivity devices
+  if ( OPT_HMC_RES == 'SRT' ) then
+    HMC_RES = BS - CALI_RES
+    HMC_RES = LIMIT ( HMC_RES, 0, MISSING )
+  else
+    HMC_RES = ( BS - CALI_RES ) / 2
+    HMC_RES = LIMIT ( HMC_RES, 0, MISSING )
+  endif
+
+  /* Convert bulk density to electronic density
+  rhoe = ( RHO + 188.3 ) / 1.0704
+
+  /* Calculate U
+  U = rhoe * PEF / 1000
+
+  /* Calculate Ct
+  if ( RT <> missing & RT > 0 ) then
+    CT = 1 / RT
+  else
+    CT = missing
+  endif
+
+  /* Calculate Cxo
+  if ( RXO <> missing & RXO > 0 ) then
+    CXO = 1 / RXO
+  else
+    CXO = missing
+  endif
+
+  /* Store answers
+  call PUT_FRAME ()
+
+enddo
+
+end
